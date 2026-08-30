@@ -5,11 +5,40 @@ import { ModelViewer } from './ModelViewer';
 const apiBaseUrl = import.meta.env.VITE_ARTIFEX_API_URL ?? 'http://127.0.0.1:8000';
 
 type GenerationState = 'idle' | 'generating' | 'ready' | 'error';
+type ExportFormat = '3mf' | 'stl' | 'glb';
+
+interface AnalysisFinding {
+  code: string;
+  severity: 'info' | 'warning' | 'error';
+  message: string;
+}
+
+interface MeshAnalysis {
+  score: number;
+  findings: AnalysisFinding[];
+  exportBlocked: boolean;
+  metrics: {
+    triangleCount: number;
+    vertexCount: number;
+    componentCount: number;
+    watertight: boolean | null;
+    manifold: boolean | null;
+    dimensionsMm: number[] | null;
+    durationMs: number;
+  };
+}
 
 interface GenerationResponse {
   mesh_asset_id: string;
   provider: string;
   model: string;
+  analysis: MeshAnalysis;
+}
+
+interface ExportResponse {
+  export_asset_id: string;
+  format: ExportFormat;
+  warning: string | null;
 }
 
 export function App() {
@@ -21,10 +50,15 @@ export function App() {
   const [generationMessage, setGenerationMessage] = useState(
     'Use Fixture for a GPU-free local demo or TRELLIS when its runner is configured.',
   );
+  const [analysis, setAnalysis] = useState<MeshAnalysis | null>(null);
+  const [exportResult, setExportResult] = useState<ExportResponse | null>(null);
+  const [exportMessage, setExportMessage] = useState('');
 
   const openAsset = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setAssetId(assetInput.trim());
+    setAnalysis(null);
+    setExportResult(null);
   };
 
   const generate = async (event: FormEvent<HTMLFormElement>) => {
@@ -32,7 +66,10 @@ export function App() {
     if (!image) return;
 
     setGenerationState('generating');
-    setGenerationMessage('Preprocessing image and generating model…');
+    setGenerationMessage('Preprocessing image, generating model and validating geometry…');
+    setAnalysis(null);
+    setExportResult(null);
+    setExportMessage('');
     const body = new FormData();
     body.append('file', image);
 
@@ -49,6 +86,7 @@ export function App() {
 
       setAssetId(payload.mesh_asset_id);
       setAssetInput(payload.mesh_asset_id);
+      setAnalysis(payload.analysis);
       setGenerationState('ready');
       setGenerationMessage(`Generated with ${payload.provider} · ${payload.model}`);
     } catch (error) {
@@ -57,7 +95,31 @@ export function App() {
     }
   };
 
+  const exportModel = async (format: ExportFormat) => {
+    if (!assetId || analysis?.exportBlocked) return;
+    setExportResult(null);
+    setExportMessage(`Preparing ${format.toUpperCase()}…`);
+    try {
+      const response = await fetch(
+        `${apiBaseUrl}/v1/exports/${encodeURIComponent(assetId)}?format=${format}`,
+        { method: 'POST' },
+      );
+      const payload = (await response.json()) as ExportResponse | { detail?: { message?: string } };
+      if (!response.ok || !('export_asset_id' in payload)) {
+        const detail = 'detail' in payload ? payload.detail?.message : undefined;
+        throw new Error(detail ?? `Export failed with HTTP ${response.status}`);
+      }
+      setExportResult(payload);
+      setExportMessage(payload.warning ?? `${format.toUpperCase()} export ready.`);
+    } catch (error) {
+      setExportMessage(error instanceof Error ? error.message : 'Export failed');
+    }
+  };
+
   const assetUrl = assetId ? `${apiBaseUrl}/v1/assets/${encodeURIComponent(assetId)}` : undefined;
+  const exportUrl = exportResult
+    ? `${apiBaseUrl}/v1/assets/${encodeURIComponent(exportResult.export_asset_id)}`
+    : undefined;
 
   return (
     <main className="app-shell" data-qa-id="app-shell">
@@ -112,6 +174,37 @@ export function App() {
         </p>
       </section>
 
+      {analysis && (
+        <section className="analysis-card" data-qa-id="mesh-analysis-panel">
+          <div className="analysis-score">
+            <span>Geometry score</span>
+            <strong data-qa-id="geometry-score">{analysis.score}</strong>
+          </div>
+          <div className="analysis-metrics">
+            <span>{analysis.metrics.triangleCount.toLocaleString()} triangles</span>
+            <span>{analysis.metrics.componentCount} component(s)</span>
+            <span>{analysis.metrics.watertight ? 'Watertight' : 'Open mesh'}</span>
+            <span>{analysis.metrics.manifold ? 'Manifold' : 'Non-manifold'}</span>
+            {analysis.metrics.dimensionsMm && (
+              <span>
+                {analysis.metrics.dimensionsMm.map((value) => value.toFixed(1)).join(' × ')} mm
+              </span>
+            )}
+          </div>
+          <div className="analysis-findings" data-qa-id="geometry-findings">
+            {analysis.findings.length === 0 ? (
+              <p>No basic geometry findings detected.</p>
+            ) : (
+              analysis.findings.map((finding) => (
+                <p key={finding.code} className={`finding finding--${finding.severity}`}>
+                  <strong>{finding.code}</strong> · {finding.message}
+                </p>
+              ))
+            )}
+          </div>
+        </section>
+      )}
+
       <section className="workspace-card" data-qa-id="generated-model-workspace">
         <div className="workspace-toolbar">
           <div>
@@ -137,6 +230,31 @@ export function App() {
         </div>
 
         <ModelViewer assetUrl={assetUrl} />
+
+        <div className="export-bar" data-qa-id="export-controls">
+          <div>
+            <strong>Manufacturing export</strong>
+            <p>{exportMessage || 'Choose an output format after geometry validation.'}</p>
+          </div>
+          <div className="export-actions">
+            {(['3mf', 'stl', 'glb'] as ExportFormat[]).map((format) => (
+              <button
+                key={format}
+                type="button"
+                onClick={() => void exportModel(format)}
+                disabled={!assetId || analysis?.exportBlocked === true}
+                data-qa-id={`export-${format}-button`}
+              >
+                Export {format.toUpperCase()}
+              </button>
+            ))}
+            {exportUrl && (
+              <a href={exportUrl} data-qa-id="download-export-link">
+                Download {exportResult?.format.toUpperCase()}
+              </a>
+            )}
+          </div>
+        </div>
       </section>
     </main>
   );
