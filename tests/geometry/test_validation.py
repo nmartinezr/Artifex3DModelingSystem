@@ -7,8 +7,8 @@ import trimesh
 from artifex_geometry import TrimeshMeshValidator
 
 
-def test_valid_box_reports_manufacturing_metrics(tmp_path: Path) -> None:
-    mesh = trimesh.creation.box(extents=(40.0, 30.0, 20.0))
+def test_valid_glb_box_reports_manufacturing_metrics_in_mm(tmp_path: Path) -> None:
+    mesh = trimesh.creation.box(extents=(0.04, 0.03, 0.02))
     path = tmp_path / "box.glb"
     mesh.export(path)
 
@@ -24,7 +24,8 @@ def test_valid_box_reports_manufacturing_metrics(tmp_path: Path) -> None:
     assert report.boundary_edge_count == 0
     assert report.volume_mm3 is not None
     assert round(report.volume_mm3, 5) == 24000.0
-    assert report.dimensions_mm == [40.0, 30.0, 20.0]
+    assert report.dimensions_mm is not None
+    assert [round(value, 5) for value in report.dimensions_mm] == [40.0, 30.0, 20.0]
 
 
 def test_open_mesh_reports_boundaries_without_mutating_source(tmp_path: Path) -> None:
