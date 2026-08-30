@@ -30,6 +30,18 @@ jobs:
       - run: pytest tests/geometry -q
       - run: python tests/geometry/benchmark_trimesh.py
 
+  export-service:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -e 'services/export-service[dev]'
+      - run: ruff check services/export-service/src tests/export
+      - run: mypy services/export-service/src
+      - run: pytest tests/export -q
+
   api:
     runs-on: ubuntu-latest
     defaults:
@@ -40,6 +52,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - run: pip install -e '../../services/geometry-engine' -e '../../services/export-service'
       - run: pip install -e '.[dev]'
       - run: ruff check src tests
       - run: mypy src
