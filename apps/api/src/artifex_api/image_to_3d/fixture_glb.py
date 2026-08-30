@@ -5,15 +5,15 @@ import struct
 
 
 def create_fixture_cube_glb(size_mm: float = 40.0) -> bytes:
-    """Create a valid deterministic GLB cube for local/CI Image → 3D flows."""
-    half = size_mm / 2.0
+    """Create a valid GLB cube; glTF payload coordinates are encoded in meters."""
+    half_m = (size_mm / 1000.0) / 2.0
     faces = (
-        ((0.0, 0.0, 1.0), ((-half, -half, half), (half, -half, half), (half, half, half), (-half, half, half))),
-        ((0.0, 0.0, -1.0), ((-half, half, -half), (half, half, -half), (half, -half, -half), (-half, -half, -half))),
-        ((1.0, 0.0, 0.0), ((half, -half, -half), (half, half, -half), (half, half, half), (half, -half, half))),
-        ((-1.0, 0.0, 0.0), ((-half, -half, half), (-half, half, half), (-half, half, -half), (-half, -half, -half))),
-        ((0.0, 1.0, 0.0), ((-half, half, half), (half, half, half), (half, half, -half), (-half, half, -half))),
-        ((0.0, -1.0, 0.0), ((-half, -half, -half), (half, -half, -half), (half, -half, half), (-half, -half, half))),
+        ((0.0, 0.0, 1.0), ((-half_m, -half_m, half_m), (half_m, -half_m, half_m), (half_m, half_m, half_m), (-half_m, half_m, half_m))),
+        ((0.0, 0.0, -1.0), ((-half_m, half_m, -half_m), (half_m, half_m, -half_m), (half_m, -half_m, -half_m), (-half_m, -half_m, -half_m))),
+        ((1.0, 0.0, 0.0), ((half_m, -half_m, -half_m), (half_m, half_m, -half_m), (half_m, half_m, half_m), (half_m, -half_m, half_m))),
+        ((-1.0, 0.0, 0.0), ((-half_m, -half_m, half_m), (-half_m, half_m, half_m), (-half_m, half_m, -half_m), (-half_m, -half_m, -half_m))),
+        ((0.0, 1.0, 0.0), ((-half_m, half_m, half_m), (half_m, half_m, half_m), (half_m, half_m, -half_m), (-half_m, half_m, -half_m))),
+        ((0.0, -1.0, 0.0), ((-half_m, -half_m, -half_m), (half_m, -half_m, -half_m), (half_m, -half_m, half_m), (-half_m, -half_m, half_m))),
     )
 
     positions: list[float] = []
@@ -81,8 +81,8 @@ def create_fixture_cube_glb(size_mm: float = 40.0) -> bytes:
                 "componentType": 5126,
                 "count": 24,
                 "type": "VEC3",
-                "min": [-half, -half, -half],
-                "max": [half, half, half],
+                "min": [-half_m, -half_m, -half_m],
+                "max": [half_m, half_m, half_m],
             },
             {"bufferView": 1, "componentType": 5126, "count": 24, "type": "VEC3"},
             {"bufferView": 2, "componentType": 5123, "count": 36, "type": "SCALAR"},
