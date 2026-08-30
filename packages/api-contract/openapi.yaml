@@ -1,0 +1,99 @@
+openapi: 3.1.0
+info:
+  title: ARTIFEX API
+  version: 0.1.0
+servers:
+  - url: /api
+paths:
+  /v1/assets:
+    post:
+      summary: Upload a binary asset
+      operationId: uploadAsset
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Asset created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Asset'
+  /v1/projects/{projectId}:
+    get:
+      summary: Fetch project metadata
+      operationId: getProject
+      parameters:
+        - in: path
+          name: projectId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Project
+          content:
+            application/json:
+              schema:
+                type: object
+  /v1/jobs/{jobId}:
+    get:
+      summary: Fetch processing job state
+      operationId: getJob
+      parameters:
+        - in: path
+          name: jobId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Job state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+components:
+  schemas:
+    Asset:
+      type: object
+      required: [id, mediaType, sizeBytes]
+      properties:
+        id: { type: string }
+        mediaType: { type: string }
+        sizeBytes: { type: integer, minimum: 0 }
+        sha256: { type: string }
+    Job:
+      type: object
+      required: [id, type, status, createdAt]
+      properties:
+        id: { type: string }
+        type: { type: string }
+        status:
+          type: string
+          enum: [queued, running, succeeded, failed, cancelled]
+        progress:
+          type: number
+          minimum: 0
+          maximum: 1
+        resultAssetIds:
+          type: array
+          items: { type: string }
+        error:
+          $ref: '#/components/schemas/Error'
+        createdAt: { type: string, format: date-time }
+        completedAt: { type: string, format: date-time }
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        correlationId: { type: string }
+        details: { type: object, additionalProperties: true }
