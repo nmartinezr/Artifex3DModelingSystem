@@ -66,6 +66,7 @@ class GenerationResult:
     texture_assets: Sequence[GeneratedAssetRef]
     provenance: GenerationProvenance
     diagnostics: Sequence[GenerationDiagnostic] = ()
+    project_object: Mapping[str, Any] | None = None
 
 
 class ImageTo3DProvider(Protocol):
