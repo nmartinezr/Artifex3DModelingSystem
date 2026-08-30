@@ -9,6 +9,7 @@ from .contracts import (
     GeometryResult,
     MeshMetadata,
 )
+from .validation import MeshFinding, MeshValidationReport, TrimeshMeshValidator
 
 __all__ = [
     "AssetRef",
@@ -17,5 +18,8 @@ __all__ = [
     "GeometryEngine",
     "GeometryErrorCode",
     "GeometryResult",
+    "MeshFinding",
     "MeshMetadata",
+    "MeshValidationReport",
+    "TrimeshMeshValidator",
 ]

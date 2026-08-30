@@ -3,7 +3,7 @@ requires = ["setuptools>=75", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "artifex-geometry"
+name = "artifex-export"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
@@ -22,13 +22,13 @@ dev = [
 where = ["src"]
 
 [tool.setuptools.package-data]
-artifex_geometry = ["py.typed"]
+artifex_export = ["py.typed"]
 
 [tool.ruff]
 line-length = 100
-src = ["src", "../../tests/geometry"]
+src = ["src", "../../tests/export"]
 
 [tool.mypy]
 python_version = "3.12"
 strict = true
-packages = ["artifex_geometry"]
+packages = ["artifex_export"]
