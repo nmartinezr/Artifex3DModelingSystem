@@ -5,7 +5,6 @@ import sys
 from pathlib import Path
 
 import trimesh
-
 from artifex_export import ExportFormat, ExportService
 
 
