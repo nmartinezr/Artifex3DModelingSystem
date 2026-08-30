@@ -1,0 +1,17 @@
+{
+  "provider": "fixture",
+  "model": "deterministic-cube",
+  "modelVersion": "1",
+  "notes": "Fast-CI baseline. The fixture provider intentionally emits identical geometry for every semantic input; real-provider GPU baselines are recorded separately and may vary by model version.",
+  "cases": {
+    "simple-clean": {"generationSuccess": true, "triangleCount": 12, "componentCount": 1, "watertight": true, "findingCodes": []},
+    "product": {"generationSuccess": true, "triangleCount": 12, "componentCount": 1, "watertight": true, "findingCodes": []},
+    "figurine": {"generationSuccess": true, "triangleCount": 12, "componentCount": 1, "watertight": true, "findingCodes": []},
+    "animal": {"generationSuccess": true, "triangleCount": 12, "componentCount": 1, "watertight": true, "findingCodes": []},
+    "asymmetric": {"generationSuccess": true, "triangleCount": 12, "componentCount": 1, "watertight": true, "findingCodes": []},
+    "thin-features": {"generationSuccess": true, "triangleCount": 12, "componentCount": 1, "watertight": true, "findingCodes": []},
+    "challenging-silhouette": {"generationSuccess": true, "triangleCount": 12, "componentCount": 1, "watertight": true, "findingCodes": []},
+    "challenging-background": {"generationSuccess": true, "triangleCount": 12, "componentCount": 1, "watertight": true, "findingCodes": []},
+    "transparent": {"generationSuccess": true, "triangleCount": 12, "componentCount": 1, "watertight": true, "findingCodes": []}
+  }
+}
