@@ -94,8 +94,14 @@ class TrimeshMeshValidator:
                 )
             )
 
+        # glTF commonly duplicates coincident vertices at normal/UV/material seams. Topological
+        # checks must weld those positions on a copy or a valid solid is misreported as multiple
+        # disconnected surface patches. The source mesh and its authored attributes stay untouched.
+        topology_mesh = mesh.copy()
+        topology_mesh.merge_vertices()  # type: ignore[no-untyped-call]
+
         edge_counts: Counter[tuple[int, int]] = Counter()
-        for face in mesh.faces.tolist():
+        for face in topology_mesh.faces.tolist():
             a, b, c = (int(index) for index in face)
             edges: tuple[tuple[int, int], tuple[int, int], tuple[int, int]] = (
                 self._edge(a, b),
@@ -139,7 +145,7 @@ class TrimeshMeshValidator:
                 )
             )
 
-        component_count = len(mesh.split(only_watertight=False))  # type: ignore[no-untyped-call]
+        component_count = len(topology_mesh.split(only_watertight=False))  # type: ignore[no-untyped-call]
         if component_count > 1:
             findings.append(
                 MeshFinding(
@@ -150,7 +156,7 @@ class TrimeshMeshValidator:
                 )
             )
 
-        watertight = bool(mesh.is_watertight)
+        watertight = bool(topology_mesh.is_watertight)
         if not watertight and boundary_edge_count == 0:
             findings.append(
                 MeshFinding(
@@ -161,7 +167,7 @@ class TrimeshMeshValidator:
                 )
             )
 
-        winding_consistent = bool(mesh.is_winding_consistent)
+        winding_consistent = bool(topology_mesh.is_winding_consistent)
         if not winding_consistent:
             findings.append(
                 MeshFinding(
@@ -189,7 +195,7 @@ class TrimeshMeshValidator:
 
         volume_mm3: float | None = None
         if watertight:
-            volume_mm3 = float(mesh.volume) * (length_factor**3)
+            volume_mm3 = float(topology_mesh.volume) * (length_factor**3)
             if not math.isfinite(volume_mm3) or volume_mm3 <= 0:
                 findings.append(
                     MeshFinding(
