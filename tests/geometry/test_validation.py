@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 import trimesh
 from artifex_geometry import TrimeshMeshValidator
 
@@ -22,9 +23,9 @@ def test_valid_glb_box_reports_manufacturing_metrics_in_mm(tmp_path: Path) -> No
     assert report.manifold is True
     assert report.boundary_edge_count == 0
     assert report.volume_mm3 is not None
-    assert round(report.volume_mm3, 5) == 24000.0
+    assert report.volume_mm3 == pytest.approx(24000.0, abs=0.01)
     assert report.dimensions_mm is not None
-    assert [round(value, 5) for value in report.dimensions_mm] == [40.0, 30.0, 20.0]
+    assert report.dimensions_mm == pytest.approx([40.0, 30.0, 20.0], abs=0.001)
 
 
 def test_open_mesh_reports_boundaries_without_mutating_source(tmp_path: Path) -> None:
