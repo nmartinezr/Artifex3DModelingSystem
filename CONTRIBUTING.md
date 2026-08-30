@@ -45,9 +45,11 @@ pip install -r packages/project-schema/requirements-dev.txt
 python -m unittest discover -s packages/project-schema/tests -p 'test_*.py'
 ```
 
-## Geometry fixtures
+## Geometry engine and fixtures
 ```bash
-pip install trimesh pytest
+pip install -e 'services/geometry-engine[dev]'
+ruff check services/geometry-engine/src tests/geometry
+mypy services/geometry-engine/src
 pytest tests/geometry -q
 python tests/geometry/benchmark_trimesh.py
 ```
