@@ -1,0 +1,203 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://artifex.local/schemas/project/v1/project.schema.json",
+  "title": "ARTIFEX Project Model v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "projectId", "name", "scene", "manufacturingData", "analysis", "operationHistory", "exportConfiguration"],
+  "properties": {
+    "schemaVersion": { "const": "1.0.0" },
+    "projectId": { "$ref": "#/$defs/id" },
+    "name": { "type": "string", "minLength": 1 },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "metadata": { "$ref": "#/$defs/metadata" },
+    "scene": { "$ref": "#/$defs/scene" },
+    "manufacturingData": { "$ref": "#/$defs/manufacturingData" },
+    "connectors": { "type": "array", "items": { "$ref": "#/$defs/connector" }, "default": [] },
+    "analysis": { "$ref": "#/$defs/analysis" },
+    "operationHistory": { "$ref": "#/$defs/operationHistory" },
+    "exportConfiguration": { "$ref": "#/$defs/exportConfiguration" }
+  },
+  "$defs": {
+    "id": { "type": "string", "minLength": 1 },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "source": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+      }
+    },
+    "vector3": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y", "z"],
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "z": { "type": "number" }
+      }
+    },
+    "quaternion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y", "z", "w"],
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "z": { "type": "number" },
+        "w": { "type": "number" }
+      }
+    },
+    "transform": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["translation", "rotation", "scale"],
+      "properties": {
+        "translation": { "$ref": "#/$defs/vector3" },
+        "rotation": { "$ref": "#/$defs/quaternion" },
+        "scale": { "$ref": "#/$defs/vector3" }
+      }
+    },
+    "assetReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["assetId", "mediaType"],
+      "properties": {
+        "assetId": { "$ref": "#/$defs/id" },
+        "mediaType": { "type": "string", "minLength": 1 },
+        "checksum": { "type": "string" },
+        "byteLength": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "mesh": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["asset", "triangleCount"],
+      "properties": {
+        "asset": { "$ref": "#/$defs/assetReference" },
+        "triangleCount": { "type": "integer", "minimum": 0 },
+        "vertexCount": { "type": "integer", "minimum": 0 },
+        "bounds": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["min", "max"],
+          "properties": {
+            "min": { "$ref": "#/$defs/vector3" },
+            "max": { "$ref": "#/$defs/vector3" }
+          }
+        }
+      }
+    },
+    "material": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["materialId", "name"],
+      "properties": {
+        "materialId": { "$ref": "#/$defs/id" },
+        "name": { "type": "string", "minLength": 1 },
+        "baseColor": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$" },
+        "texture": { "$ref": "#/$defs/assetReference" }
+      }
+    },
+    "sceneObject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["objectId", "name", "visible", "transform", "mesh"],
+      "properties": {
+        "objectId": { "$ref": "#/$defs/id" },
+        "name": { "type": "string", "minLength": 1 },
+        "visible": { "type": "boolean" },
+        "transform": { "$ref": "#/$defs/transform" },
+        "mesh": { "$ref": "#/$defs/mesh" },
+        "materialId": { "$ref": "#/$defs/id" },
+        "metadata": { "$ref": "#/$defs/metadata" }
+      }
+    },
+    "scene": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["objects", "materials"],
+      "properties": {
+        "objects": { "type": "array", "items": { "$ref": "#/$defs/sceneObject" } },
+        "materials": { "type": "array", "items": { "$ref": "#/$defs/material" } },
+        "metadata": { "$ref": "#/$defs/metadata" }
+      }
+    },
+    "manufacturingData": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["unit"],
+      "properties": {
+        "unit": { "const": "mm" },
+        "printerProfileId": { "type": "string" },
+        "materialStrategy": { "type": "string" },
+        "targetProcess": { "type": "string", "default": "FDM" }
+      }
+    },
+    "connector": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["connectorId", "type", "objectIds"],
+      "properties": {
+        "connectorId": { "$ref": "#/$defs/id" },
+        "type": { "type": "string", "minLength": 1 },
+        "objectIds": { "type": "array", "items": { "$ref": "#/$defs/id" }, "minItems": 1 }
+      }
+    },
+    "analysisFinding": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["code", "severity", "message"],
+      "properties": {
+        "code": { "type": "string", "minLength": 1 },
+        "severity": { "enum": ["info", "warning", "error"] },
+        "message": { "type": "string", "minLength": 1 },
+        "objectId": { "$ref": "#/$defs/id" }
+      }
+    },
+    "analysis": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["findings"],
+      "properties": {
+        "score": { "type": "number", "minimum": 0, "maximum": 100 },
+        "findings": { "type": "array", "items": { "$ref": "#/$defs/analysisFinding" } }
+      }
+    },
+    "operation": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["operationId", "type", "status", "parameters"],
+      "properties": {
+        "operationId": { "$ref": "#/$defs/id" },
+        "type": { "type": "string", "minLength": 1 },
+        "status": { "enum": ["applied", "failed", "undone"] },
+        "parameters": { "type": "object", "additionalProperties": true },
+        "inputObjectIds": { "type": "array", "items": { "$ref": "#/$defs/id" } },
+        "outputObjectIds": { "type": "array", "items": { "$ref": "#/$defs/id" } },
+        "metadata": { "$ref": "#/$defs/metadata" }
+      }
+    },
+    "operationHistory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operations"],
+      "properties": {
+        "operations": { "type": "array", "items": { "$ref": "#/$defs/operation" } },
+        "cursor": { "type": "integer", "minimum": -1 }
+      }
+    },
+    "exportConfiguration": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["preferredFormat"],
+      "properties": {
+        "preferredFormat": { "enum": ["3mf", "glb", "stl"] },
+        "preserveObjects": { "type": "boolean", "default": true },
+        "includeTextures": { "type": "boolean", "default": true }
+      }
+    }
+  }
+}

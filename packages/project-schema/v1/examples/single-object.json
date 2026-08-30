@@ -1,0 +1,74 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectId": "project-single-object",
+  "name": "Single Generated Model",
+  "scene": {
+    "objects": [
+      {
+        "objectId": "object-1",
+        "name": "Generated Model",
+        "visible": true,
+        "transform": {
+          "translation": { "x": 0, "y": 0, "z": 0 },
+          "rotation": { "x": 0, "y": 0, "z": 0, "w": 1 },
+          "scale": { "x": 1, "y": 1, "z": 1 }
+        },
+        "mesh": {
+          "asset": {
+            "assetId": "mesh-asset-1",
+            "mediaType": "model/gltf-binary",
+            "checksum": "sha256:example",
+            "byteLength": 1024
+          },
+          "triangleCount": 12000,
+          "vertexCount": 6200,
+          "bounds": {
+            "min": { "x": -25, "y": 0, "z": -20 },
+            "max": { "x": 25, "y": 80, "z": 20 }
+          }
+        },
+        "materialId": "material-1",
+        "metadata": {
+          "source": "image-to-3d",
+          "provider": "mock-provider",
+          "providerModel": "mock-v1"
+        }
+      }
+    ],
+    "materials": [
+      {
+        "materialId": "material-1",
+        "name": "Generated Material",
+        "baseColor": "#D9D9D9"
+      }
+    ]
+  },
+  "manufacturingData": {
+    "unit": "mm",
+    "targetProcess": "FDM"
+  },
+  "connectors": [],
+  "analysis": {
+    "score": 92,
+    "findings": []
+  },
+  "operationHistory": {
+    "operations": [
+      {
+        "operationId": "op-1",
+        "type": "image-to-3d.generate",
+        "status": "applied",
+        "parameters": {
+          "provider": "mock-provider"
+        },
+        "outputObjectIds": ["object-1"]
+      }
+    ],
+    "cursor": 0
+  },
+  "exportConfiguration": {
+    "preferredFormat": "3mf",
+    "preserveObjects": true,
+    "includeTextures": true
+  }
+}
