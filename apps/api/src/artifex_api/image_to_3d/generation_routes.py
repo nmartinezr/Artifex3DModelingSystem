@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import time
 from typing import Annotated, Any
+from uuid import uuid4
 
 from artifex_geometry import TrimeshMeshValidator
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from pydantic import BaseModel
 
 from .contracts import GenerationOptions, GenerationRequest, ImageAssetRef
+from .diagnostics import GenerationTelemetryRecord, JsonLogTelemetrySink, sanitized_parameters
 from .fixture_provider import FixtureImageTo3DProvider
 from .preprocessing import FileAssetStore, ImagePreprocessingError, ImagePreprocessor
 from .service import ImageTo3DService, UnknownImageTo3DProviderError
@@ -16,6 +19,7 @@ router = APIRouter(prefix="/v1/image-to-3d", tags=["image-to-3d"])
 _preprocessor = ImagePreprocessor()
 _asset_store = FileAssetStore()
 _validator = TrimeshMeshValidator()
+_telemetry = JsonLogTelemetrySink()
 _service = ImageTo3DService(
     providers={
         "fixture": FixtureImageTo3DProvider(),
@@ -26,6 +30,7 @@ _service = ImageTo3DService(
 
 
 class GenerateImageResponse(BaseModel):
+    correlation_id: str
     original_asset_id: str
     processed_asset_id: str
     mesh_asset_id: str
@@ -42,11 +47,19 @@ async def generate_from_image(
     file: Annotated[UploadFile, File()],
     provider: Annotated[str, Query()] = "fixture",
 ) -> GenerateImageResponse:
+    started = time.perf_counter()
+    correlation_id = f"gen_{uuid4().hex}"
     media_type = file.content_type or "application/octet-stream"
     content = await file.read()
+    preprocessing_duration_ms = 0.0
+    generation_duration_ms = 0.0
 
     try:
+        preprocessing_started = time.perf_counter()
         preprocessed = _preprocessor.process(content, media_type)
+        preprocessing_duration_ms = (time.perf_counter() - preprocessing_started) * 1000
+
+        generation_started = time.perf_counter()
         generated = _service.generate(
             GenerationRequest(
                 source_image=ImageAssetRef(
@@ -57,20 +70,49 @@ async def generate_from_image(
             ),
             provider_id=provider,
         )
+        generation_duration_ms = (time.perf_counter() - generation_started) * 1000
     except ImagePreprocessingError as exc:
+        _emit_failure(
+            correlation_id,
+            provider,
+            started,
+            preprocessing_duration_ms,
+            generation_duration_ms,
+            exc.code,
+        )
         raise HTTPException(
             status_code=422,
-            detail={"code": exc.code, "message": exc.message},
+            detail={"code": exc.code, "message": exc.message, "correlationId": correlation_id},
         ) from exc
     except UnknownImageTo3DProviderError as exc:
+        _emit_failure(
+            correlation_id,
+            provider,
+            started,
+            preprocessing_duration_ms,
+            generation_duration_ms,
+            "IMAGE_TO_3D_PROVIDER_UNKNOWN",
+        )
         raise HTTPException(
             status_code=400,
-            detail={"code": "IMAGE_TO_3D_PROVIDER_UNKNOWN", "message": str(exc)},
+            detail={
+                "code": "IMAGE_TO_3D_PROVIDER_UNKNOWN",
+                "message": str(exc),
+                "correlationId": correlation_id,
+            },
         ) from exc
     except TrellisProviderError as exc:
+        _emit_failure(
+            correlation_id,
+            provider,
+            started,
+            preprocessing_duration_ms,
+            generation_duration_ms,
+            exc.code.value,
+        )
         raise HTTPException(
             status_code=503,
-            detail={"code": exc.code.value, "message": exc.message},
+            detail={"code": exc.code.value, "message": exc.message, "correlationId": correlation_id},
         ) from exc
 
     mesh_path = _asset_store.resolve(generated.mesh_asset.asset_id)
@@ -105,8 +147,33 @@ async def generate_from_image(
         "exportBlocked": validation.export_blocked,
     }
 
+    _telemetry.emit(
+        GenerationTelemetryRecord(
+            correlation_id=correlation_id,
+            provider=generated.provenance.provider,
+            model=generated.provenance.model,
+            model_version=generated.provenance.model_version,
+            parameters=sanitized_parameters(generated.provenance.parameters),
+            input_width=preprocessed.width,
+            input_height=preprocessed.height,
+            preprocessing_duration_ms=round(preprocessing_duration_ms, 3),
+            generation_duration_ms=round(generation_duration_ms, 3),
+            validation_duration_ms=round(validation.duration_ms, 3),
+            total_duration_ms=round((time.perf_counter() - started) * 1000, 3),
+            vertex_count=validation.vertex_count,
+            triangle_count=validation.triangle_count,
+            component_count=validation.component_count,
+            validation_summary={
+                "score": analysis["score"],
+                "exportBlocked": validation.export_blocked,
+                "findingCodes": [item.code for item in validation.findings],
+            },
+        )
+    )
+
     project_object = dict(generated.project_object) if generated.project_object is not None else None
     return GenerateImageResponse(
+        correlation_id=correlation_id,
         original_asset_id=preprocessed.original.asset_id,
         processed_asset_id=preprocessed.processed.asset_id,
         mesh_asset_id=generated.mesh_asset.asset_id,
@@ -116,4 +183,34 @@ async def generate_from_image(
         processing_time_ms=round(generated.provenance.processing_time_ms, 3),
         project_object=project_object,
         analysis=analysis,
+    )
+
+
+def _emit_failure(
+    correlation_id: str,
+    provider: str,
+    started: float,
+    preprocessing_duration_ms: float,
+    generation_duration_ms: float,
+    error_code: str,
+) -> None:
+    _telemetry.emit(
+        GenerationTelemetryRecord(
+            correlation_id=correlation_id,
+            provider=provider,
+            model=None,
+            model_version=None,
+            parameters={},
+            input_width=None,
+            input_height=None,
+            preprocessing_duration_ms=round(preprocessing_duration_ms, 3),
+            generation_duration_ms=round(generation_duration_ms, 3),
+            validation_duration_ms=0.0,
+            total_duration_ms=round((time.perf_counter() - started) * 1000, 3),
+            vertex_count=None,
+            triangle_count=None,
+            component_count=None,
+            validation_summary={},
+            error_code=error_code,
+        )
     )

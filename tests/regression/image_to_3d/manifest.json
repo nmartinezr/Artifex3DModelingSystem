@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "1.0.0",
+  "provenance": {
+    "type": "procedural",
+    "license": "CC0-1.0",
+    "author": "ARTIFEX project",
+    "notes": "All canonical regression images are generated deterministically from repository-owned recipes; no private or third-party user images are required."
+  },
+  "tiers": {
+    "ci": "Small deterministic raster fixtures used in normal CI with the fixture provider.",
+    "gpu": "The same semantic cases may be rendered at higher resolution and evaluated against configured real providers outside normal CI."
+  },
+  "cases": [
+    {"id": "simple-clean", "category": "simple-object-clean-background", "recipe": "solid-box", "expected": {"background": "clean", "alpha": false}},
+    {"id": "product", "category": "product-like-object", "recipe": "bottle", "expected": {"background": "clean", "alpha": false}},
+    {"id": "figurine", "category": "figurine-character", "recipe": "figure", "expected": {"background": "clean", "alpha": false}},
+    {"id": "animal", "category": "animal", "recipe": "quadruped", "expected": {"background": "clean", "alpha": false}},
+    {"id": "asymmetric", "category": "asymmetric-object", "recipe": "offset-parts", "expected": {"background": "clean", "alpha": false}},
+    {"id": "thin-features", "category": "thin-features", "recipe": "antennae", "expected": {"background": "clean", "alpha": false}},
+    {"id": "challenging-silhouette", "category": "challenging-silhouette", "recipe": "concave-star", "expected": {"background": "clean", "alpha": false}},
+    {"id": "challenging-background", "category": "challenging-background", "recipe": "low-contrast", "expected": {"background": "textured", "alpha": false}},
+    {"id": "transparent", "category": "transparent-partial", "recipe": "alpha-object", "expected": {"background": "transparent", "alpha": true}}
+  ],
+  "baselineMetrics": [
+    "generationSuccess",
+    "processingTimeMs",
+    "triangleCount",
+    "vertexCount",
+    "componentCount",
+    "watertight",
+    "findingCodes",
+    "provider",
+    "modelVersion"
+  ]
+}

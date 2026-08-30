@@ -1,0 +1,63 @@
+name: E2E
+
+on:
+  pull_request:
+    branches: [develop]
+    paths:
+      - 'apps/api/**'
+      - 'apps/web/**'
+      - 'services/geometry-engine/**'
+      - 'services/export-service/**'
+      - '.github/workflows/e2e.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: e2e-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  image-to-3d:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install API
+        run: |
+          pip install -e 'services/geometry-engine' -e 'services/export-service'
+          pip install -e 'apps/api[dev]'
+      - name: Install web and Chromium
+        working-directory: apps/web
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Start API and web
+        run: |
+          ARTIFEX_ASSET_ROOT="$RUNNER_TEMP/artifex-assets" uvicorn artifex_api.main:app --app-dir apps/api/src --host 127.0.0.1 --port 8000 > "$RUNNER_TEMP/api.log" 2>&1 &
+          (cd apps/web && npm run dev -- --host 127.0.0.1 --port 5173) > "$RUNNER_TEMP/web.log" 2>&1 &
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:8000/health >/dev/null && curl --fail --silent http://127.0.0.1:5173 >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/api.log"
+          cat "$RUNNER_TEMP/web.log"
+          exit 1
+      - name: Run Playwright E2E
+        working-directory: apps/web
+        run: npm run test:e2e
+      - name: Upload diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-diagnostics
+          path: |
+            apps/web/test-results
+            ${{ runner.temp }}/api.log
+            ${{ runner.temp }}/web.log
+          if-no-files-found: ignore
