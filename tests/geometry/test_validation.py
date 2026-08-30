@@ -3,7 +3,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import trimesh
-
 from artifex_geometry import TrimeshMeshValidator
 
 
