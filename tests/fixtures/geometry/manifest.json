@@ -1,0 +1,33 @@
+{
+  "version": "1.0.0",
+  "fixtures": [
+    {
+      "id": "cube-valid",
+      "path": "cube.obj",
+      "description": "Closed 10 mm cube",
+      "expected": {
+        "watertight": true,
+        "componentCount": 1,
+        "boundsMm": [10.0, 10.0, 10.0],
+        "volumeMm3": 1000.0
+      }
+    },
+    {
+      "id": "two-cubes-disconnected",
+      "path": "two-cubes-disconnected.obj",
+      "description": "Two independent closed cubes",
+      "expected": {
+        "componentCount": 2
+      }
+    },
+    {
+      "id": "open-plane",
+      "path": "open-plane.obj",
+      "description": "Single open quad triangulated into two faces",
+      "expected": {
+        "watertight": false,
+        "componentCount": 1
+      }
+    }
+  ]
+}
