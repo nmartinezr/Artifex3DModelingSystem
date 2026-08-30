@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import json
 import logging
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass
-from typing import Any, Mapping, Protocol
+from typing import Any, Protocol
 
 logger = logging.getLogger("artifex.image_to_3d")
 
@@ -41,7 +42,7 @@ class JsonLogTelemetrySink:
     def emit(self, record: GenerationTelemetryRecord) -> None:
         try:
             logger.info("image_to_3d_generation %s", json.dumps(record.to_dict(), sort_keys=True))
-        except Exception:  # pragma: no cover - logging must never fail the product flow
+        except Exception:  # noqa: BLE001  # pragma: no cover - telemetry must never break generation
             logger.exception("Failed to emit Image to 3D telemetry")
 
 
