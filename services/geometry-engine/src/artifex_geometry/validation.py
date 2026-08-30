@@ -97,13 +97,12 @@ class TrimeshMeshValidator:
         edge_counts: Counter[tuple[int, int]] = Counter()
         for face in mesh.faces.tolist():
             a, b, c = (int(index) for index in face)
-            edge_counts.update(
-                (
-                    tuple(sorted((a, b))),
-                    tuple(sorted((b, c))),
-                    tuple(sorted((c, a))),
-                )
+            edges: tuple[tuple[int, int], tuple[int, int], tuple[int, int]] = (
+                self._edge(a, b),
+                self._edge(b, c),
+                self._edge(c, a),
             )
+            edge_counts.update(edges)
         boundary_edge_count = sum(count == 1 for count in edge_counts.values())
         non_manifold_edge_count = sum(count > 2 for count in edge_counts.values())
         manifold = non_manifold_edge_count == 0
@@ -221,6 +220,10 @@ class TrimeshMeshValidator:
             duration_ms=duration_ms,
             findings=tuple(findings),
         )
+
+    @staticmethod
+    def _edge(first: int, second: int) -> tuple[int, int]:
+        return (first, second) if first <= second else (second, first)
 
     @staticmethod
     def _length_factor_to_mm(path: Path) -> float:
