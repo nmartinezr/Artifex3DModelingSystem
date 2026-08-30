@@ -6,7 +6,6 @@ from pathlib import Path
 
 import trimesh
 
-
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURES = ROOT / "tests" / "fixtures" / "geometry"
 
@@ -31,8 +30,8 @@ def analyze(path: Path) -> dict:
     return {
         "path": str(path),
         "durationMs": round(elapsed_ms, 3),
-        "vertices": int(len(merged.vertices)),
-        "triangles": int(len(merged.faces)),
+        "vertices": len(merged.vertices),
+        "triangles": len(merged.faces),
         "componentCount": len(components),
         "watertight": bool(merged.is_watertight),
         "isVolume": bool(merged.is_volume),
