@@ -120,7 +120,7 @@ class ImagePreprocessor:
                         "Image dimensions exceed the processing limit",
                     )
                 normalized = image.convert("RGBA")
-        except (UnidentifiedImageError, OSError) as exc:
+        except (UnidentifiedImageError, OSError, SyntaxError) as exc:
             raise ImagePreprocessingError("IMAGE_INVALID", "Image data is corrupt or invalid") from exc
         decode_ms = (time.perf_counter() - started) * 1000
 
