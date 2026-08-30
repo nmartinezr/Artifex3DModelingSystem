@@ -4,13 +4,19 @@ import { describe, expect, it } from 'vitest';
 import { App } from './App';
 
 describe('App', () => {
-  it('renders the ARTIFEX development-ready shell', () => {
+  it('renders the generated model workspace with stable QA hooks', () => {
     render(<App />);
 
-    expect(screen.getByRole('heading', { name: /ARTIFEX 3D Modeling System/i })).toBeInTheDocument();
-    expect(screen.getByText(/Technical foundation ready/i)).toHaveAttribute(
+    expect(screen.getByRole('heading', { name: /3D Modeling System/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Generated model/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/Asset ID/i)).toHaveAttribute('data-qa-id', 'asset-id-input');
+    expect(screen.getByRole('button', { name: /Open model/i })).toHaveAttribute(
       'data-qa-id',
-      'development-readiness-status',
+      'open-asset-button',
+    );
+    expect(screen.getByText(/Enter an ARTIFEX asset ID/i)).toHaveAttribute(
+      'data-qa-id',
+      'generated-model-viewer-status',
     );
   });
 });
