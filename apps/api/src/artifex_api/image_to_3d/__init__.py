@@ -10,6 +10,7 @@ from .contracts import (
     ImageTo3DProvider,
 )
 from .service import ImageTo3DService, UnknownImageTo3DProviderError
+from .trellis_provider import TrellisProvider, TrellisProviderError
 
 __all__ = [
     "GeneratedAssetRef",
@@ -22,5 +23,7 @@ __all__ = [
     "ImageAssetRef",
     "ImageTo3DProvider",
     "ImageTo3DService",
+    "TrellisProvider",
+    "TrellisProviderError",
     "UnknownImageTo3DProviderError",
 ]
