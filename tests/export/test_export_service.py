@@ -6,7 +6,6 @@ from pathlib import Path
 from zipfile import ZipFile
 
 import trimesh
-
 from artifex_export import ExportFormat, ExportService
 
 
