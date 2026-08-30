@@ -42,7 +42,7 @@ class JsonLogTelemetrySink:
     def emit(self, record: GenerationTelemetryRecord) -> None:
         try:
             logger.info("image_to_3d_generation %s", json.dumps(record.to_dict(), sort_keys=True))
-        except Exception:  # noqa: BLE001  # pragma: no cover - telemetry must never break generation
+        except Exception:  # pragma: no cover - telemetry must never break generation
             logger.exception("Failed to emit Image to 3D telemetry")
 
 
