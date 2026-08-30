@@ -30,6 +30,6 @@ test('upload → generate → viewer → validation → 3MF export', async ({ pa
   expect(href).toBeTruthy();
   const response = await request.get(href!);
   expect(response.ok()).toBeTruthy();
-  expect(response.headers()['content-type']).toContain('model/3mf');
+  expect(response.headers()['content-type']).toContain('application/vnd.ms-3mfdocument');
   expect((await response.body()).byteLength).toBeGreaterThan(100);
 });
