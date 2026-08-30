@@ -69,8 +69,12 @@ class TrimeshMeshValidator:
         if vertex_count == 0 or triangle_count == 0:
             return self._invalid(started, "MESH_EMPTY", "The model contains no printable triangles.")
 
-        bounds_raw = [[float(value) for value in row] for row in mesh.bounds]
-        dimensions = [float(value) for value in mesh.extents]
+        length_factor = self._length_factor_to_mm(path)
+        bounds_raw = [
+            [float(value) * length_factor for value in row]
+            for row in mesh.bounds
+        ]
+        dimensions = [float(value) * length_factor for value in mesh.extents]
         finite_geometry = all(math.isfinite(value) for row in bounds_raw for value in row)
         finite_geometry = finite_geometry and all(math.isfinite(value) for value in dimensions)
         if not finite_geometry:
@@ -126,7 +130,8 @@ class TrimeshMeshValidator:
                 )
             )
 
-        areas = [float(value) for value in mesh.area_faces]
+        area_factor = length_factor * length_factor
+        areas = [float(value) * area_factor for value in mesh.area_faces]
         degenerate_face_count = sum((not math.isfinite(area)) or area <= 1e-12 for area in areas)
         if degenerate_face_count:
             findings.append(
@@ -188,7 +193,7 @@ class TrimeshMeshValidator:
 
         volume_mm3: float | None = None
         if watertight:
-            volume_mm3 = float(mesh.volume)
+            volume_mm3 = float(mesh.volume) * (length_factor**3)
             if not math.isfinite(volume_mm3) or volume_mm3 <= 0:
                 findings.append(
                     MeshFinding(
@@ -219,6 +224,11 @@ class TrimeshMeshValidator:
             duration_ms=duration_ms,
             findings=tuple(findings),
         )
+
+    @staticmethod
+    def _length_factor_to_mm(path: Path) -> float:
+        # glTF 2.0 defines linear distances in meters. ARTIFEX canonical geometry is millimeters.
+        return 1000.0 if path.suffix.lower() in {".glb", ".gltf"} else 1.0
 
     @staticmethod
     def _invalid(
