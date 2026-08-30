@@ -80,6 +80,12 @@ class FileAssetStore:
         path.write_bytes(content)
         return StoredImageAsset(asset_id=asset_id, media_type=media_type, path=path, sha256=digest)
 
+    def resolve(self, asset_id: str) -> Path:
+        matches = tuple(self.root.glob(f"{asset_id}.*"))
+        if len(matches) != 1:
+            raise FileNotFoundError(asset_id)
+        return matches[0]
+
 
 class ImagePreprocessor:
     def __init__(
