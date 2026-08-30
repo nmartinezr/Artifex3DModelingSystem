@@ -1,0 +1,75 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectId": "project-multi-object",
+  "name": "Multi Object Assembly",
+  "scene": {
+    "objects": [
+      {
+        "objectId": "base",
+        "name": "Base",
+        "visible": true,
+        "transform": {
+          "translation": { "x": 0, "y": 0, "z": 0 },
+          "rotation": { "x": 0, "y": 0, "z": 0, "w": 1 },
+          "scale": { "x": 1, "y": 1, "z": 1 }
+        },
+        "mesh": {
+          "asset": { "assetId": "mesh-base", "mediaType": "model/stl" },
+          "triangleCount": 4000
+        },
+        "materialId": "material-gray"
+      },
+      {
+        "objectId": "top",
+        "name": "Top",
+        "visible": true,
+        "transform": {
+          "translation": { "x": 0, "y": 20, "z": 0 },
+          "rotation": { "x": 0, "y": 0, "z": 0, "w": 1 },
+          "scale": { "x": 1, "y": 1, "z": 1 }
+        },
+        "mesh": {
+          "asset": { "assetId": "mesh-top", "mediaType": "model/stl" },
+          "triangleCount": 2500
+        },
+        "materialId": "material-red"
+      }
+    ],
+    "materials": [
+      { "materialId": "material-gray", "name": "Gray", "baseColor": "#808080" },
+      { "materialId": "material-red", "name": "Red", "baseColor": "#D94A4A" }
+    ]
+  },
+  "manufacturingData": {
+    "unit": "mm",
+    "targetProcess": "FDM",
+    "materialStrategy": "separate-parts"
+  },
+  "connectors": [
+    {
+      "connectorId": "connector-1",
+      "type": "cylindrical-pin",
+      "objectIds": ["base", "top"],
+      "diameterMm": 5,
+      "clearanceMm": 0.25
+    }
+  ],
+  "analysis": {
+    "findings": [
+      {
+        "code": "ASSEMBLY_CLEARANCE_REVIEW",
+        "severity": "info",
+        "message": "Connector clearance should be validated for the selected material."
+      }
+    ]
+  },
+  "operationHistory": {
+    "operations": [],
+    "cursor": -1
+  },
+  "exportConfiguration": {
+    "preferredFormat": "3mf",
+    "preserveObjects": true,
+    "includeTextures": false
+  }
+}
