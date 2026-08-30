@@ -1,0 +1,31 @@
+name: 3MF Compatibility
+
+on:
+  pull_request:
+    branches: [develop]
+    paths:
+      - 'services/export-service/**'
+      - 'tests/export/prusa_3mf_compat.py'
+      - '.github/workflows/3mf-compat.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: 3mf-compat-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  prusaslicer-compatibility:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install PrusaSlicer and virtual display
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y prusa-slicer xvfb
+      - name: Install ARTIFEX export service
+        run: pip install -e 'services/export-service[dev]'
+      - name: Verify ARTIFEX 3MF can round-trip through PrusaSlicer
+        run: python tests/export/prusa_3mf_compat.py
