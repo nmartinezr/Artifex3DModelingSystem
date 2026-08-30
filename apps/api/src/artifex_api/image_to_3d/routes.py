@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Annotated
+
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from pydantic import BaseModel
 
@@ -30,7 +32,7 @@ class PreprocessImageResponse(BaseModel):
 
 
 @router.post("/preprocess", response_model=PreprocessImageResponse)
-async def preprocess_image(file: UploadFile = File(...)) -> PreprocessImageResponse:
+async def preprocess_image(file: Annotated[UploadFile, File()]) -> PreprocessImageResponse:
     media_type = file.content_type or "application/octet-stream"
     content = await file.read()
     try:
