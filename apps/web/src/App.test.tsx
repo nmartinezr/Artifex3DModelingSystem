@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { App } from './App';
 
 describe('App', () => {
-  it('renders Image to 3D generation and viewer controls with stable QA hooks', () => {
+  it('renders Image to 3D generation, viewer and export controls with stable QA hooks', () => {
     render(<App />);
 
     expect(screen.getByRole('heading', { name: /3D Modeling System/i })).toBeInTheDocument();
@@ -21,5 +21,10 @@ describe('App', () => {
       'data-qa-id',
       'generated-model-viewer-status',
     );
+
+    for (const format of ['3MF', 'STL', 'GLB']) {
+      const button = screen.getByRole('button', { name: new RegExp(`Export ${format}`, 'i') });
+      expect(button).toBeDisabled();
+    }
   });
 });
