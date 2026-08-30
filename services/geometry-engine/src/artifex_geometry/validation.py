@@ -56,7 +56,7 @@ class TrimeshMeshValidator:
                 mesh = cast(Any, trimesh.util.concatenate(meshes))  # type: ignore[no-untyped-call]
             else:
                 mesh = loaded
-        except Exception as exc:
+        except (OSError, ValueError, TypeError, IndexError, KeyError) as exc:
             return self._invalid(
                 started,
                 "MESH_LOAD_FAILED",
@@ -64,16 +64,13 @@ class TrimeshMeshValidator:
                 {"errorType": type(exc).__name__},
             )
 
-        vertex_count = int(len(mesh.vertices))
-        triangle_count = int(len(mesh.faces))
+        vertex_count = len(mesh.vertices)
+        triangle_count = len(mesh.faces)
         if vertex_count == 0 or triangle_count == 0:
             return self._invalid(started, "MESH_EMPTY", "The model contains no printable triangles.")
 
         length_factor = self._length_factor_to_mm(path)
-        bounds_raw = [
-            [float(value) * length_factor for value in row]
-            for row in mesh.bounds
-        ]
+        bounds_raw = [[float(value) * length_factor for value in row] for row in mesh.bounds]
         dimensions = [float(value) * length_factor for value in mesh.extents]
         finite_geometry = all(math.isfinite(value) for row in bounds_raw for value in row)
         finite_geometry = finite_geometry and all(math.isfinite(value) for value in dimensions)
