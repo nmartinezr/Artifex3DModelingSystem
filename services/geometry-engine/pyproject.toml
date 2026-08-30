@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "artifex-geometry"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+  "networkx>=3.3,<4",
+  "trimesh>=4.7,<6",
+]
+
+[project.optional-dependencies]
+dev = [
+  "mypy>=1.17,<2",
+  "pytest>=8.4,<9",
+  "ruff>=0.12,<1",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "../../tests/geometry"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+packages = ["artifex_geometry"]
