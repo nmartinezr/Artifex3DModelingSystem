@@ -77,8 +77,9 @@ def _combined_mesh(scene: Any) -> Any:
 def _normalize_scene(scene: Any, target_size_mm: float) -> None:
     if target_size_mm <= 0:
         return
-    mesh = _combined_mesh(scene)
-    largest_extent = float(max(mesh.extents))
+    bounds = scene.bounds
+    extents = bounds[1] - bounds[0]
+    largest_extent = float(max(extents))
     if largest_extent <= 0:
         raise ValueError("Stable Fast 3D output has invalid dimensions")
     # GLB convention is meters; ARTIFEX manufacturing dimensions are millimeters.
@@ -134,7 +135,7 @@ def main() -> int:
     normalized_path = output_dir / "model.glb"
     normalized_path.write_bytes(scene.export(file_type="glb"))
 
-    bounds_m = mesh.bounds
+    bounds_m = scene.bounds
     result = {
         "name": "Stable Fast 3D model",
         "conventions": {"unit": "mm", "handedness": "right", "upAxis": "Z"},
