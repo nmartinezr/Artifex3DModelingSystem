@@ -78,8 +78,10 @@ if (Test-Path $pythonExe) {
 
 if (Test-Path $hfCli) {
     $whoami = & $hfCli whoami 2>$null
-    if ($LASTEXITCODE -eq 0) {
-        Pass "Hugging Face authentication is active: $($whoami -join ' ')"
+    $whoamiText = ($whoami -join ' ').Trim()
+    $notAuthenticated = $LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($whoamiText) -or $whoamiText -match '(?i)not logged in|not authenticated|unauthenticated'
+    if (-not $notAuthenticated) {
+        Pass "Hugging Face authentication is active: $whoamiText"
     } else {
         Warn "Hugging Face authentication is not active. Run .\.venv-sf3d\Scripts\huggingface-cli.exe login after requesting model access."
     }
