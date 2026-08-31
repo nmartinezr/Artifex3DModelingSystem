@@ -9,7 +9,12 @@ from .contracts import (
     ImageAssetRef,
     ImageTo3DProvider,
 )
-from .provider_variants import Hunyuan3DProvider, RunnerBackedProvider, Spar3DProvider, StableFast3DProvider
+from .provider_variants import (
+    Hunyuan3DProvider,
+    RunnerBackedProvider,
+    Spar3DProvider,
+    StableFast3DProvider,
+)
 from .service import ImageTo3DService, UnknownImageTo3DProviderError
 from .trellis_provider import TrellisProvider, TrellisProviderError
 
