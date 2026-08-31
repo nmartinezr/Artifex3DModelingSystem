@@ -45,6 +45,8 @@ The request points to the preprocessed image and an output directory. The runner
 
 This keeps CUDA/PyTorch/model-specific dependencies outside the application and allows providers to be replaced without changing validation, viewer, project-model or export code.
 
+ARTIFEX also includes `tools/image_to_3d/generic_cli_runner.py`. It adapts CLI-based engines that accept an input image and produce a GLB, normalizes the model to a configurable physical size, extracts mesh metrics and emits the common runner manifest. Provider-specific runners remain appropriate when an engine needs richer texture/material handling or non-standard inference orchestration.
+
 ## Configuration
 
 | Provider | Environment variable |
@@ -90,6 +92,12 @@ For the next real-GPU comparison:
 4. **Hunyuan3D** remains experimental until its production/commercial licensing position is explicitly accepted for ARTIFEX.
 
 A final default-provider decision must be based on actual runs of the canonical dataset on comparable hardware; no quality or performance numbers should be fabricated when a model has not been executed.
+
+## Current implementation status
+
+The provider-selection architecture is implemented for all four real candidates. TRELLIS has its existing runner path, while SPAR3D, Stable Fast 3D and Hunyuan3D share the normalized runner contract and can be wired to provider-specific runners or the generic CLI adapter.
+
+This completes the interchangeable-provider application architecture but **does not complete the empirical benchmark acceptance criteria**. Issue #12 remains open until the canonical dataset is actually executed across viable real providers on comparable GPU hardware and the measured results are recorded.
 
 ## Manufacturing principle
 
