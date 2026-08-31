@@ -44,9 +44,17 @@ if (Test-Path $pythonExe) {
 }
 
 if (Test-Path $pythonExe) {
-    $torchProbe = 'import torch; name=torch.cuda.get_device_name(0) if torch.cuda.is_available() else "CPU"; print(str(torch.__version__)+"|"+str(torch.cuda.is_available())+"|"+name)'
-    $torchInfo = & $pythonExe -c $torchProbe 2>$null
-    if ($LASTEXITCODE -eq 0) {
+    $torchProbe = "import torch; name=torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU'; print(str(torch.__version__)+'|'+str(torch.cuda.is_available())+'|'+name)"
+    $previousErrorActionPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = "Continue"
+        $torchInfo = & $pythonExe -c $torchProbe 2>$null
+        $torchExitCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
+
+    if ($torchExitCode -eq 0) {
         $parts = $torchInfo -split '\|'
         if ($parts.Count -ge 3) {
             $backend = if ($parts[1] -eq "True") { "CUDA: $($parts[2])" } else { "CPU" }
