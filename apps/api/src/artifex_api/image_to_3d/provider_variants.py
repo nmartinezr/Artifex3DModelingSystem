@@ -61,12 +61,14 @@ class RunnerBackedProvider(TrellisProvider):
 
 class StableFast3DProvider(RunnerBackedProvider):
     def __init__(self, store: FileAssetStore | None = None) -> None:
+        timeout_seconds = float(os.getenv("ARTIFEX_STABLE_FAST_3D_TIMEOUT_SECONDS", "900"))
         super().__init__(
             provider_id="stable-fast-3d",
             display_name="Stable Fast 3D",
             env_var="ARTIFEX_STABLE_FAST_3D_COMMAND",
             model="stabilityai/stable-fast-3d",
             store=store,
+            timeout_seconds=timeout_seconds,
         )
 
 
