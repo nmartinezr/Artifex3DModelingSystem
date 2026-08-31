@@ -29,87 +29,139 @@ The upstream project currently documents:
 
 Keep Stable Fast 3D in its own Python environment. Do not install its pinned ML dependencies into the ARTIFEX API virtual environment.
 
-## 1. Clone Stable Fast 3D
+## Recommended Windows bootstrap
 
-From the ARTIFEX repository root:
-
-```powershell
-New-Item -ItemType Directory -Force external | Out-Null
-git clone https://github.com/Stability-AI/stable-fast-3d.git external/stable-fast-3d
-```
-
-## 2. Create an isolated SF3D environment
+From the ARTIFEX repository root, first update `develop`:
 
 ```powershell
-py -3.11 -m venv .venv-sf3d
-.\.venv-sf3d\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-pip install -U setuptools==69.5.1 wheel
+git switch develop
+git pull origin develop
 ```
 
-Install PyTorch for your CUDA/CPU platform following the official PyTorch selector, then install Stable Fast 3D requirements:
+Then run the ARTIFEX bootstrap:
 
 ```powershell
-pip install -r external/stable-fast-3d/requirements.txt
+.\scripts\setup-stable-fast-3d.ps1
 ```
 
-## 3. Request/authenticate Hugging Face access
+The bootstrap:
 
-Request access to `stabilityai/stable-fast-3d` on Hugging Face, create a read token, then authenticate in the SF3D environment:
+- verifies Git and Python 3.11
+- detects Visual Studio 2022 when available
+- reports the detected NVIDIA GPU/driver
+- clones `Stability-AI/stable-fast-3d` into `external/stable-fast-3d`
+- creates `.venv-sf3d`
+- installs the exact upstream setup prerequisites
+- validates PyTorch before installing model dependencies
+- installs Stable Fast 3D requirements
+- creates `.artifex\sf3d-env.ps1` with ARTIFEX runtime variables
+- reports whether Hugging Face authentication is active
+
+### PyTorch on NVIDIA GPUs
+
+ARTIFEX deliberately does **not** guess a CUDA PyTorch wheel. PyTorch must match the machine's supported CUDA/runtime combination.
+
+If PyTorch is not already present, the bootstrap stops before the heavy Stable Fast 3D dependency installation and gives an actionable message. Use the official PyTorch selector, then either install PyTorch directly into `.venv-sf3d` or rerun with the selected wheel index:
 
 ```powershell
-huggingface-cli login
+.\scripts\setup-stable-fast-3d.ps1 -TorchIndexUrl <PYTORCH_INDEX_URL>
 ```
 
-The first inference downloads the model weights into the Hugging Face cache.
+Example shape only; use the value returned by the official PyTorch selector for the current machine:
 
-## 4. Configure ARTIFEX
+```powershell
+.\scripts\setup-stable-fast-3d.ps1 -TorchIndexUrl https://download.pytorch.org/whl/cuXXX
+```
 
-Open the terminal that will run the ARTIFEX API and activate the normal ARTIFEX environment, not `.venv-sf3d`:
+Do not copy `cuXXX` literally.
+
+### CPU-only setup
+
+For a deterministic CPU installation:
+
+```powershell
+.\scripts\setup-stable-fast-3d.ps1 -ForceCpu
+```
+
+This installs CPU PyTorch wheels and writes `SF3D_USE_CPU=1` into the generated ARTIFEX environment script. CPU inference is expected to be much slower.
+
+## Validate the runtime
+
+After setup:
+
+```powershell
+.\scripts\check-stable-fast-3d.ps1
+```
+
+Expected checks include:
+
+```text
+[PASS] Upstream Stable Fast 3D repository detected.
+[PASS] Python environment detected: Python 3.11.x
+[PASS] PyTorch ... available (CUDA: ...).
+[PASS] Core Stable Fast 3D Python dependencies are importable.
+[PASS] ARTIFEX environment script detected: .artifex\sf3d-env.ps1
+```
+
+Hugging Face authentication can still appear as a warning until model access is configured.
+
+## Hugging Face access
+
+The model is gated. Request access to `stabilityai/stable-fast-3d` on Hugging Face, create a read token, then authenticate using the isolated runtime:
+
+```powershell
+.\.venv-sf3d\Scripts\huggingface-cli.exe login
+```
+
+Run the health check again afterward:
+
+```powershell
+.\scripts\check-stable-fast-3d.ps1
+```
+
+The first real inference downloads the model weights into the Hugging Face cache.
+
+## Load the ARTIFEX runtime configuration
+
+The bootstrap generates `.artifex\sf3d-env.ps1`. Dot-source it in the PowerShell terminal that will run the ARTIFEX API:
+
+```powershell
+. .\.artifex\sf3d-env.ps1
+```
+
+This configures:
+
+```text
+ARTIFEX_STABLE_FAST_3D_COMMAND
+ARTIFEX_SF3D_REPO
+ARTIFEX_SF3D_PYTHON
+ARTIFEX_STABLE_FAST_3D_TIMEOUT_SECONDS
+ARTIFEX_SF3D_TEXTURE_RESOLUTION
+ARTIFEX_SF3D_REMESH_OPTION
+ARTIFEX_SF3D_TARGET_SIZE_MM
+```
+
+The generated `.artifex/`, `.venv-sf3d/` and upstream checkout are local-only and ignored by Git.
+
+## Start ARTIFEX
+
+Activate the normal ARTIFEX API environment in the same terminal after loading the SF3D variables:
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
-```
-
-Configure the bundled ARTIFEX runner and point it to the isolated SF3D Python executable:
-
-```powershell
-$env:ARTIFEX_STABLE_FAST_3D_COMMAND = "python tools/image_to_3d/stable_fast_3d_runner.py"
-$env:ARTIFEX_SF3D_REPO = "$PWD\external\stable-fast-3d"
-$env:ARTIFEX_SF3D_PYTHON = "$PWD\.venv-sf3d\Scripts\python.exe"
-$env:ARTIFEX_STABLE_FAST_3D_TIMEOUT_SECONDS = "900"
-```
-
-Optional tuning:
-
-```powershell
-$env:ARTIFEX_SF3D_TEXTURE_RESOLUTION = "1024"
-$env:ARTIFEX_SF3D_REMESH_OPTION = "none"
-$env:ARTIFEX_SF3D_TARGET_SIZE_MM = "100"
-```
-
-If you explicitly need CPU execution, set the upstream switch before starting the API:
-
-```powershell
-$env:SF3D_USE_CPU = "1"
-```
-
-## 5. Start ARTIFEX
-
-API:
-
-```powershell
+. .\.artifex\sf3d-env.ps1
 uvicorn artifex_api.main:app --reload --app-dir apps/api/src
 ```
 
-Web app in a second terminal:
+Start the web app in a second terminal:
 
 ```powershell
 cd apps/web
+npm install
 npm run dev
 ```
 
-## 6. First real 3D test
+## First real 3D test
 
 For the simplest test that removes the cube without adding Qwen cost yet:
 
@@ -122,7 +174,7 @@ Upload a PNG/JPEG/WebP containing one clear subject. ARTIFEX preprocesses the im
 
 If generation succeeds, the viewer is displaying the Stable Fast 3D mesh, not the fixture cube.
 
-## 7. Full style + real 3D test
+## Full style + real 3D test
 
 After the Qwen style environment is configured, select for example:
 
@@ -133,11 +185,43 @@ Provider: Stable Fast 3D
 
 The conditioning image sent to Stable Fast 3D will be the Qwen-stylized image rather than the original upload.
 
+## Manual setup fallback
+
+If the bootstrap cannot be used, the equivalent manual setup is:
+
+```powershell
+New-Item -ItemType Directory -Force external | Out-Null
+git clone https://github.com/Stability-AI/stable-fast-3d.git external/stable-fast-3d
+py -3.11 -m venv .venv-sf3d
+.\.venv-sf3d\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+pip install -U setuptools==69.5.1 wheel
+```
+
+Install PyTorch for the platform using the official PyTorch selector, then:
+
+```powershell
+pip install -r external/stable-fast-3d/requirements.txt
+huggingface-cli login
+```
+
+Configure ARTIFEX:
+
+```powershell
+$env:ARTIFEX_STABLE_FAST_3D_COMMAND = "python tools/image_to_3d/stable_fast_3d_runner.py"
+$env:ARTIFEX_SF3D_REPO = "$PWD\external\stable-fast-3d"
+$env:ARTIFEX_SF3D_PYTHON = "$PWD\.venv-sf3d\Scripts\python.exe"
+$env:ARTIFEX_STABLE_FAST_3D_TIMEOUT_SECONDS = "900"
+$env:ARTIFEX_SF3D_TEXTURE_RESOLUTION = "1024"
+$env:ARTIFEX_SF3D_REMESH_OPTION = "none"
+$env:ARTIFEX_SF3D_TARGET_SIZE_MM = "100"
+```
+
 ## Diagnostics
 
 ### `Stable Fast 3D runner is not configured`
 
-`ARTIFEX_STABLE_FAST_3D_COMMAND` was not set in the API process.
+`ARTIFEX_STABLE_FAST_3D_COMMAND` was not set in the API process. Load `.artifex\sf3d-env.ps1` before starting the API.
 
 ### `Stable Fast 3D is not installed`
 
@@ -145,7 +229,11 @@ The conditioning image sent to Stable Fast 3D will be the Qwen-stylized image ra
 
 ### Hugging Face authorization/download error
 
-Confirm access to `stabilityai/stable-fast-3d` and authenticate from the `.venv-sf3d` environment.
+Confirm access to `stabilityai/stable-fast-3d` and authenticate from `.venv-sf3d`.
+
+### Native wheel/compiler failure on Windows
+
+Verify Visual Studio 2022 Build Tools with the C++ workload and ensure the selected PyTorch/CUDA combination is compatible. Upstream Windows support remains experimental.
 
 ### CUDA out of memory
 
