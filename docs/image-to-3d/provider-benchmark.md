@@ -12,6 +12,15 @@ This document defines the ARTIFEX benchmark contract for selecting Image → 3D 
 | Stable Fast 3D | `stable-fast-3d` | Fast/lower-resource fallback candidate | Fast single-image reconstruction; official repo documents ~6 GB VRAM for default inference |
 | Hunyuan3D | `hunyuan3d` | Experimental candidate | Adapter available; licensing/commercial constraints require explicit review before production default |
 
+Authoritative project references used for the initial research:
+
+- TRELLIS: https://github.com/microsoft/TRELLIS
+- SPAR3D: https://github.com/Stability-AI/stable-point-aware-3d
+- Stable Fast 3D: https://github.com/Stability-AI/stable-fast-3d
+- Hunyuan3D 2: https://github.com/Tencent-Hunyuan/Hunyuan3D-2
+
+Licenses and model cards must be rechecked at the exact model/version used in a production release. Stable Fast 3D uses the Stability AI Community License, whose official repository states free commercial use below its defined annual-revenue threshold. TRELLIS states that its models and majority of code are MIT-licensed while some submodules have separate terms. Hunyuan3D has model-specific community/license terms and therefore remains an explicit legal-review item for ARTIFEX.
+
 ## Runner boundary
 
 All real providers are isolated from the ARTIFEX API process. A configured command receives:
