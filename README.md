@@ -91,7 +91,21 @@ Image upload
 
 The `fixture` provider intentionally generates a deterministic cube. It validates the ARTIFEX application pipeline, geometry tooling and export workflow; it does **not** infer the uploaded image's shape.
 
-A TRELLIS provider adapter is also available for real Image → 3D inference. It requires a separately configured TRELLIS runner and suitable inference hardware. Set the runner command before starting the API:
+### Real Image → 3D providers
+
+ARTIFEX keeps inference engines behind the same `ImageTo3DProvider` boundary. The web UI currently exposes:
+
+| Provider | Provider ID | Runner configuration |
+| --- | --- | --- |
+| Fixture | `fixture` | None; deterministic local/CI baseline |
+| TRELLIS | `trellis` | `ARTIFEX_TRELLIS_COMMAND` |
+| SPAR3D | `spar3d` | `ARTIFEX_SPAR3D_COMMAND` |
+| Stable Fast 3D | `stable-fast-3d` | `ARTIFEX_STABLE_FAST_3D_COMMAND` |
+| Hunyuan3D | `hunyuan3d` | `ARTIFEX_HUNYUAN3D_COMMAND` |
+
+Real inference providers execute through isolated runner commands so GPU/model dependencies do not become dependencies of the ARTIFEX API process. Each runner receives an ARTIFEX request manifest and must return normalized mesh metadata/assets in millimeters, right-handed coordinates and Z-up convention.
+
+Example TRELLIS configuration:
 
 ```bash
 export ARTIFEX_TRELLIS_COMMAND="python /path/to/artifex_trellis_runner.py"
@@ -103,7 +117,9 @@ Windows PowerShell:
 $env:ARTIFEX_TRELLIS_COMMAND = "python C:\path\to\artifex_trellis_runner.py"
 ```
 
-Provider/model benchmarking and the production inference path are under active development; the deterministic fixture remains the default for normal CI and local smoke testing.
+The equivalent environment variables can be configured for SPAR3D, Stable Fast 3D and Hunyuan3D. Selecting an unconfigured provider returns a stable provider-unavailable error rather than silently falling back to another model.
+
+See [Image → 3D Provider Benchmark](docs/image-to-3d/provider-benchmark.md) for the comparison criteria, runner contract and current provider recommendation. GPU-heavy benchmark runs are intentionally separate from normal CI; the deterministic fixture remains the default for smoke testing.
 
 ## Repository architecture
 
