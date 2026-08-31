@@ -48,7 +48,7 @@ export function App() {
   const [provider, setProvider] = useState('fixture');
   const [generationState, setGenerationState] = useState<GenerationState>('idle');
   const [generationMessage, setGenerationMessage] = useState(
-    'Use Fixture for a GPU-free local demo or TRELLIS when its runner is configured.',
+    'Use Fixture for a GPU-free demo, or select a configured inference provider.',
   );
   const [analysis, setAnalysis] = useState<MeshAnalysis | null>(null);
   const [exportResult, setExportResult] = useState<ExportResponse | null>(null);
@@ -156,7 +156,10 @@ export function App() {
             onChange={(event) => setProvider(event.target.value)}
           >
             <option value="fixture">Fixture · local demo</option>
-            <option value="trellis">TRELLIS · configured GPU runner</option>
+            <option value="trellis">TRELLIS · high-quality runner</option>
+            <option value="spar3d">SPAR3D · backside-aware reconstruction</option>
+            <option value="stable-fast-3d">Stable Fast 3D · lower VRAM / fast</option>
+            <option value="hunyuan3d">Hunyuan3D · experimental adapter</option>
           </select>
           <button
             type="submit"
