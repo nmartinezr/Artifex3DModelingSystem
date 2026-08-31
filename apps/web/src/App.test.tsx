@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { App } from './App';
@@ -10,7 +10,13 @@ describe('App', () => {
     expect(screen.getByRole('heading', { name: /3D Modeling System/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /Generate a model/i })).toBeInTheDocument();
     expect(screen.getByLabelText(/Source image/i)).toHaveAttribute('data-qa-id', 'source-image-input');
-    expect(screen.getByLabelText(/Provider/i)).toHaveAttribute('data-qa-id', 'provider-select');
+    const provider = screen.getByLabelText(/Provider/i) as HTMLSelectElement;
+    expect(provider).toHaveAttribute('data-qa-id', 'provider-select');
+    expect(provider.value).toBe('fixture');
+    fireEvent.change(provider, { target: { value: 'spar3d' } });
+    expect(provider.value).toBe('spar3d');
+    expect(screen.getByRole('option', { name: /Stable Fast 3D/i })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: /Hunyuan3D/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Generate 3D model/i })).toHaveAttribute(
       'data-qa-id',
       'generate-model-button',
