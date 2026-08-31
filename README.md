@@ -117,7 +117,15 @@ Windows PowerShell:
 $env:ARTIFEX_TRELLIS_COMMAND = "python C:\path\to\artifex_trellis_runner.py"
 ```
 
-The equivalent environment variables can be configured for SPAR3D, Stable Fast 3D and Hunyuan3D. Selecting an unconfigured provider returns a stable provider-unavailable error rather than silently falling back to another model.
+For CLI-based engines, `tools/image_to_3d/generic_cli_runner.py` can adapt an existing inference command that accepts an input image and writes a GLB. For example, after installing Stable Fast 3D in a separate environment:
+
+```bash
+export ARTIFEX_STABLE_FAST_3D_COMMAND='python tools/image_to_3d/generic_cli_runner.py --engine-command "python /opt/stable-fast-3d/run.py {input} --output-dir {engine_output}" --mesh-glob "**/mesh.glb"'
+```
+
+PowerShell uses the same runner with `$env:ARTIFEX_STABLE_FAST_3D_COMMAND = "..."`. The generic runner normalizes the largest model dimension to 100 mm by default, generates ARTIFEX geometry metrics and writes the common `result.json` contract. Use `--target-size-mm 0` when scale normalization should be disabled.
+
+The equivalent provider environment variables can be configured for SPAR3D and Hunyuan3D using either the generic CLI runner or a provider-specific runner. Selecting an unconfigured provider returns a stable provider-unavailable error rather than silently falling back to another model.
 
 See [Image → 3D Provider Benchmark](docs/image-to-3d/provider-benchmark.md) for the comparison criteria, runner contract and current provider recommendation. GPU-heavy benchmark runs are intentionally separate from normal CI; the deterministic fixture remains the default for smoke testing.
 
