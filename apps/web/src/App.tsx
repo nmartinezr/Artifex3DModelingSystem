@@ -32,6 +32,7 @@ interface GenerationResponse {
   mesh_asset_id: string;
   provider: string;
   model: string;
+  style: string;
   analysis: MeshAnalysis;
 }
 
@@ -46,9 +47,10 @@ export function App() {
   const [assetId, setAssetId] = useState('');
   const [image, setImage] = useState<File | null>(null);
   const [provider, setProvider] = useState('fixture');
+  const [style, setStyle] = useState('none');
   const [generationState, setGenerationState] = useState<GenerationState>('idle');
   const [generationMessage, setGenerationMessage] = useState(
-    'Use Fixture for a GPU-free demo, or select a configured inference provider.',
+    'Choose a style and an Image → 3D provider. Style presets require a configured style runner.',
   );
   const [analysis, setAnalysis] = useState<MeshAnalysis | null>(null);
   const [exportResult, setExportResult] = useState<ExportResponse | null>(null);
@@ -66,7 +68,7 @@ export function App() {
     if (!image) return;
 
     setGenerationState('generating');
-    setGenerationMessage('Preprocessing image, generating model and validating geometry…');
+    setGenerationMessage('Preprocessing image, applying style, generating model and validating geometry…');
     setAnalysis(null);
     setExportResult(null);
     setExportMessage('');
@@ -75,7 +77,7 @@ export function App() {
 
     try {
       const response = await fetch(
-        `${apiBaseUrl}/v1/image-to-3d/generate?provider=${encodeURIComponent(provider)}`,
+        `${apiBaseUrl}/v1/image-to-3d/generate?provider=${encodeURIComponent(provider)}&style=${encodeURIComponent(style)}`,
         { method: 'POST', body },
       );
       const payload = (await response.json()) as GenerationResponse | { detail?: { message?: string } };
@@ -88,7 +90,9 @@ export function App() {
       setAssetInput(payload.mesh_asset_id);
       setAnalysis(payload.analysis);
       setGenerationState('ready');
-      setGenerationMessage(`Generated with ${payload.provider} · ${payload.model}`);
+      setGenerationMessage(
+        `Generated ${payload.style} with ${payload.provider} · ${payload.model}`,
+      );
     } catch (error) {
       setGenerationState('error');
       setGenerationMessage(error instanceof Error ? error.message : 'Generation failed');
@@ -136,7 +140,7 @@ export function App() {
           <p className="eyebrow">Image → 3D</p>
           <h2>Generate a model</h2>
           <p className="generator-description">
-            Upload an image, preprocess it and send it through the selected ARTIFEX provider.
+            Choose an artistic preset independently from the 3D reconstruction engine.
           </p>
         </div>
         <form className="generator-form" onSubmit={generate} data-qa-id="image-to-3d-form">
@@ -148,7 +152,26 @@ export function App() {
             data-qa-id="source-image-input"
             onChange={(event) => setImage(event.target.files?.[0] ?? null)}
           />
-          <label htmlFor="provider">Provider</label>
+
+          <label htmlFor="style">Style</label>
+          <select
+            id="style"
+            value={style}
+            data-qa-id="style-select"
+            onChange={(event) => setStyle(event.target.value)}
+          >
+            <option value="none">Original · no stylization</option>
+            <option value="collectible-vinyl">Collectible Vinyl · oversized head</option>
+            <option value="chibi">Chibi · cute exaggerated proportions</option>
+            <option value="anime-figure">Anime Figure · display collectible</option>
+            <option value="cartoon">Cartoon · simplified rounded forms</option>
+            <option value="miniature">Miniature · print-oriented detail</option>
+            <option value="bobblehead">Bobblehead · large head, compact body</option>
+            <option value="realistic-bust">Realistic Bust · portrait sculpture</option>
+            <option value="low-poly">Low Poly · faceted stylization</option>
+          </select>
+
+          <label htmlFor="provider">3D provider</label>
           <select
             id="provider"
             value={provider}

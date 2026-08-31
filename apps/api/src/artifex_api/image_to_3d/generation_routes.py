@@ -14,10 +14,17 @@ from .fixture_provider import FixtureImageTo3DProvider
 from .preprocessing import FileAssetStore, ImagePreprocessingError, ImagePreprocessor
 from .provider_variants import Hunyuan3DProvider, Spar3DProvider, StableFast3DProvider
 from .service import ImageTo3DService, UnknownImageTo3DProviderError
+from .style_preprocessing import (
+    RunnerStylePreprocessor,
+    StylePreprocessingError,
+    UnknownStylePresetError,
+    resolve_style_preset,
+)
 from .trellis_provider import TrellisProvider, TrellisProviderError
 
 router = APIRouter(prefix="/v1/image-to-3d", tags=["image-to-3d"])
 _preprocessor = ImagePreprocessor()
+_style_preprocessor = RunnerStylePreprocessor()
 _asset_store = FileAssetStore()
 _validator = TrimeshMeshValidator()
 _telemetry = JsonLogTelemetrySink()
@@ -37,6 +44,8 @@ class GenerateImageResponse(BaseModel):
     correlation_id: str
     original_asset_id: str
     processed_asset_id: str
+    styled_asset_id: str
+    style: str
     mesh_asset_id: str
     mesh_media_type: str
     provider: str
@@ -50,6 +59,7 @@ class GenerateImageResponse(BaseModel):
 async def generate_from_image(
     file: Annotated[UploadFile, File()],
     provider: Annotated[str, Query()] = "fixture",
+    style: Annotated[str, Query()] = "none",
 ) -> GenerateImageResponse:
     started = time.perf_counter()
     correlation_id = f"gen_{uuid4().hex}"
@@ -59,22 +69,55 @@ async def generate_from_image(
     generation_duration_ms = 0.0
 
     try:
+        preset = resolve_style_preset(style)
         preprocessing_started = time.perf_counter()
         preprocessed = _preprocessor.process(content, media_type)
+        styled = _style_preprocessor.stylize(preprocessed.processed, preset)
         preprocessing_duration_ms = (time.perf_counter() - preprocessing_started) * 1000
 
         generation_started = time.perf_counter()
         generated = _service.generate(
             GenerationRequest(
-                source_image=ImageAssetRef(
-                    asset_id=preprocessed.processed.asset_id,
-                    media_type=preprocessed.processed.media_type,
-                ),
-                options=GenerationOptions(),
+                source_image=ImageAssetRef(asset_id=styled.asset_id, media_type=styled.media_type),
+                options=GenerationOptions(provider_options={"style": preset.style_id}),
             ),
             provider_id=provider,
         )
         generation_duration_ms = (time.perf_counter() - generation_started) * 1000
+    except UnknownStylePresetError as exc:
+        _emit_failure(
+            correlation_id,
+            provider,
+            started,
+            preprocessing_duration_ms,
+            generation_duration_ms,
+            "IMAGE_TO_3D_STYLE_UNKNOWN",
+        )
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "IMAGE_TO_3D_STYLE_UNKNOWN",
+                "message": f"Unknown style preset: {exc}",
+                "correlationId": correlation_id,
+            },
+        ) from exc
+    except StylePreprocessingError as exc:
+        _emit_failure(
+            correlation_id,
+            provider,
+            started,
+            preprocessing_duration_ms,
+            generation_duration_ms,
+            "IMAGE_TO_3D_STYLE_UNAVAILABLE",
+        )
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "IMAGE_TO_3D_STYLE_UNAVAILABLE",
+                "message": str(exc),
+                "correlationId": correlation_id,
+            },
+        ) from exc
     except ImagePreprocessingError as exc:
         _emit_failure(
             correlation_id,
@@ -171,6 +214,7 @@ async def generate_from_image(
                 "score": analysis["score"],
                 "exportBlocked": validation.export_blocked,
                 "findingCodes": [item.code for item in validation.findings],
+                "style": preset.style_id,
             },
         )
     )
@@ -180,6 +224,8 @@ async def generate_from_image(
         correlation_id=correlation_id,
         original_asset_id=preprocessed.original.asset_id,
         processed_asset_id=preprocessed.processed.asset_id,
+        styled_asset_id=styled.asset_id,
+        style=preset.style_id,
         mesh_asset_id=generated.mesh_asset.asset_id,
         mesh_media_type=generated.mesh_asset.media_type,
         provider=generated.provenance.provider,
