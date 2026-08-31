@@ -49,7 +49,10 @@ class RunnerBackedProvider(TrellisProvider):
                     code=f"{self.provider_id.upper().replace('-', '_')}_GENERATION_COMPLETED",
                     severity="info",
                     message=f"{self._display_name} generation completed",
-                    details={"durationMs": round(result.provenance.processing_time_ms, 3)},
+                    details={
+                        "durationMs": round(result.provenance.processing_time_ms, 3),
+                        "runnerEnvironmentVariable": self._env_var,
+                    },
                 ),
             ),
             project_object=result.project_object,
