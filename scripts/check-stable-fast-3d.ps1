@@ -44,11 +44,16 @@ if (Test-Path $pythonExe) {
 }
 
 if (Test-Path $pythonExe) {
-    $torchInfo = & $pythonExe -c "import torch; print(f'{torch.__version__}|{torch.cuda.is_available()}|{torch.cuda.get_device_name(0) if torch.cuda.is_available() else \"CPU\"}')" 2>$null
+    $torchProbe = 'import torch; name=torch.cuda.get_device_name(0) if torch.cuda.is_available() else "CPU"; print(str(torch.__version__)+"|"+str(torch.cuda.is_available())+"|"+name)'
+    $torchInfo = & $pythonExe -c $torchProbe 2>$null
     if ($LASTEXITCODE -eq 0) {
         $parts = $torchInfo -split '\|'
-        $backend = if ($parts[1] -eq "True") { "CUDA: $($parts[2])" } else { "CPU" }
-        Pass "PyTorch $($parts[0]) available ($backend)."
+        if ($parts.Count -ge 3) {
+            $backend = if ($parts[1] -eq "True") { "CUDA: $($parts[2])" } else { "CPU" }
+            Pass "PyTorch $($parts[0]) available ($backend)."
+        } else {
+            Fail "PyTorch probe returned an unexpected result: $torchInfo"
+        }
     } else {
         Fail "PyTorch is not importable in .venv-sf3d."
     }
