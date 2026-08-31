@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 
-from .contracts import GenerationDiagnostic, GenerationResult
+from .contracts import GenerationDiagnostic, GenerationRequest, GenerationResult
 from .preprocessing import FileAssetStore
 from .trellis_provider import TrellisProvider, TrellisProviderError
 
@@ -31,7 +31,7 @@ class RunnerBackedProvider(TrellisProvider):
         )
         self._command = configured
 
-    def generate(self, request):  # type: ignore[no-untyped-def]
+    def generate(self, request: GenerationRequest) -> GenerationResult:
         try:
             result = super().generate(request)
         except TrellisProviderError as exc:
