@@ -5,6 +5,7 @@ import json
 import shlex
 import subprocess
 from pathlib import Path
+from typing import Any, cast
 
 import trimesh
 
@@ -36,26 +37,36 @@ def _parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def _load_mesh(path: Path) -> trimesh.Trimesh:
-    loaded = trimesh.load(path, force="scene")
+def _load_scene(path: Path) -> Any:
+    loaded = cast(Any, trimesh.load(path, force="scene"))
     if isinstance(loaded, trimesh.Scene):
-        geometries = tuple(loaded.geometry.values())
-        if not geometries:
+        if not loaded.geometry:
             raise ValueError("Generated GLB contains no mesh geometry")
-        return trimesh.util.concatenate(geometries)
-    if not isinstance(loaded, trimesh.Trimesh):
-        raise ValueError("Generated asset is not a mesh")
-    return loaded
+        return loaded
+    if isinstance(loaded, trimesh.Trimesh):
+        scene = trimesh.Scene()
+        scene.add_geometry(loaded)
+        return scene
+    raise ValueError("Generated asset is not a mesh")
 
 
-def _normalize_mesh(mesh: trimesh.Trimesh, target_size_mm: float) -> None:
+def _combined_mesh(scene: Any) -> Any:
+    geometries = tuple(scene.geometry.values())
+    if not geometries:
+        raise ValueError("Generated GLB contains no mesh geometry")
+    return cast(Any, trimesh.util.concatenate(geometries))
+
+
+def _normalize_scene(scene: Any, target_size_mm: float) -> None:
     if target_size_mm <= 0:
         return
+    mesh = _combined_mesh(scene)
     largest_extent = float(max(mesh.extents))
     if largest_extent <= 0:
         raise ValueError("Generated mesh has invalid dimensions")
     target_extent_m = target_size_mm / 1000.0
-    mesh.apply_scale(target_extent_m / largest_extent)
+    scale = target_extent_m / largest_extent
+    scene.apply_transform(trimesh.transformations.scale_matrix(scale))
 
 
 def main() -> int:
@@ -92,10 +103,11 @@ def main() -> int:
             f"Engine completed successfully but no GLB matched {args.mesh_glob!r} in {engine_output}"
         )
 
-    mesh = _load_mesh(matches[0])
-    _normalize_mesh(mesh, args.target_size_mm)
+    scene = _load_scene(matches[0])
+    _normalize_scene(scene, args.target_size_mm)
+    mesh = _combined_mesh(scene)
     normalized_path = output_dir / "model.glb"
-    mesh.export(normalized_path, file_type="glb")
+    normalized_path.write_bytes(scene.export(file_type="glb"))
 
     bounds_m = mesh.bounds
     bounds_mm = {
