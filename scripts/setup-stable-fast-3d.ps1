@@ -47,12 +47,18 @@ function Import-VsDevEnvironment([string]$VsInstall) {
         }
     }
 
+    # PyTorch's BuildExtension checks this flag when a Visual C++ developer
+    # environment is already active. Mark the imported SDK environment so
+    # distutils does not attempt to activate Visual Studio a second time.
+    [System.Environment]::SetEnvironmentVariable('DISTUTILS_USE_SDK', '1', 'Process')
+
     $cl = Get-Command "cl.exe" -ErrorAction SilentlyContinue
     if (-not $cl) {
         throw "Visual Studio 2022 is installed, but cl.exe is unavailable after loading VsDevCmd.bat. Install the Desktop development with C++ workload, including MSVC v143 x64/x86 build tools and a Windows SDK."
     }
 
     Write-Host "MSVC compiler: $($cl.Source)"
+    Write-Host "DISTUTILS_USE_SDK=$env:DISTUTILS_USE_SDK"
     $previousErrorActionPreference = $ErrorActionPreference
     try {
         $ErrorActionPreference = "Continue"
