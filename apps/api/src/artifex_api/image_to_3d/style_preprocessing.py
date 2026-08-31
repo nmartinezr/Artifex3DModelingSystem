@@ -99,11 +99,16 @@ class RunnerStylePreprocessor:
         self,
         store: FileAssetStore | None = None,
         command: str | None = None,
-        timeout_seconds: float = 180.0,
+        timeout_seconds: float | None = None,
     ) -> None:
         self._store = store or FileAssetStore()
         self._command = command or os.getenv("ARTIFEX_STYLE_COMMAND")
-        self._timeout_seconds = timeout_seconds
+        configured_timeout = os.getenv("ARTIFEX_STYLE_TIMEOUT_SECONDS")
+        self._timeout_seconds = (
+            timeout_seconds
+            if timeout_seconds is not None
+            else float(configured_timeout or "900")
+        )
 
     def stylize(self, source: StoredImageAsset, preset: StylePreset) -> StoredImageAsset:
         if preset.style_id == "none":
