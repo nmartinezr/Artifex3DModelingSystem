@@ -80,10 +80,21 @@ if (-not (Test-Path $pythonExe)) {
 & $pythonExe -m pip install "setuptools==69.5.1" wheel
 
 Write-Step "Checking PyTorch"
-$torchAvailable = $true
-& $pythonExe -c "import torch; print('torch=' + torch.__version__ + ', cuda=' + str(torch.cuda.is_available()))" 2>$null
-if ($LASTEXITCODE -ne 0) {
-    $torchAvailable = $false
+$torchAvailable = $false
+$previousErrorActionPreference = $ErrorActionPreference
+try {
+    $ErrorActionPreference = "Continue"
+    $torchProbe = & $pythonExe -c "import torch; print('torch=' + torch.__version__ + ', cuda=' + str(torch.cuda.is_available()))" 2>&1
+    $torchExitCode = $LASTEXITCODE
+} finally {
+    $ErrorActionPreference = $previousErrorActionPreference
+}
+
+if ($torchExitCode -eq 0) {
+    $torchAvailable = $true
+    $torchProbe | ForEach-Object { Write-Host $_ }
+} else {
+    Write-Host "PyTorch is not installed in .venv-sf3d yet."
 }
 
 if (-not $torchAvailable) {
