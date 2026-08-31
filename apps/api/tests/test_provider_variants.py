@@ -38,3 +38,12 @@ def test_unconfigured_provider_has_stable_identity_and_actionable_error(
     assert caught.value.code == GenerationErrorCode.PROVIDER_UNAVAILABLE
     assert env_var in caught.value.message
     assert "TRELLIS runner is not configured" not in caught.value.message
+
+
+def test_real_provider_ids_are_unique() -> None:
+    provider_ids = {
+        StableFast3DProvider().provider_id,
+        Spar3DProvider().provider_id,
+        Hunyuan3DProvider().provider_id,
+    }
+    assert provider_ids == {"stable-fast-3d", "spar3d", "hunyuan3d"}
