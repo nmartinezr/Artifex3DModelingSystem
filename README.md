@@ -117,7 +117,9 @@ Windows PowerShell:
 $env:ARTIFEX_TRELLIS_COMMAND = "python C:\path\to\artifex_trellis_runner.py"
 ```
 
-For CLI-based engines, `tools/image_to_3d/generic_cli_runner.py` can adapt an existing inference command that accepts an input image and writes a GLB. For example, after installing Stable Fast 3D in a separate environment:
+For CLI-based engines, `tools/image_to_3d/generic_cli_runner.py` can adapt an existing inference command that accepts an input image and writes a GLB. The runner environment must include `trimesh` in addition to the selected model's dependencies.
+
+For example, after installing Stable Fast 3D in a separate environment:
 
 ```bash
 export ARTIFEX_STABLE_FAST_3D_COMMAND='python tools/image_to_3d/generic_cli_runner.py --engine-command "python /opt/stable-fast-3d/run.py {input} --output-dir {engine_output}" --mesh-glob "**/mesh.glb"'
