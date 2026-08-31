@@ -58,3 +58,10 @@ def test_stylized_preset_requires_configured_runner(tmp_path, monkeypatch: pytes
 
     with pytest.raises(StylePreprocessingError, match="ARTIFEX_STYLE_COMMAND"):
         processor.stylize(source, resolve_style_preset("collectible-vinyl"))
+
+
+def test_style_runner_timeout_can_be_configured(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
+    monkeypatch.setenv("ARTIFEX_STYLE_TIMEOUT_SECONDS", "1234")
+    processor = RunnerStylePreprocessor(store=FileAssetStore(tmp_path), command="fake-runner")
+
+    assert processor._timeout_seconds == 1234.0
