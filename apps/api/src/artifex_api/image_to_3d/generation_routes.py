@@ -12,6 +12,7 @@ from .contracts import GenerationOptions, GenerationRequest, ImageAssetRef
 from .diagnostics import GenerationTelemetryRecord, JsonLogTelemetrySink, sanitized_parameters
 from .fixture_provider import FixtureImageTo3DProvider
 from .preprocessing import FileAssetStore, ImagePreprocessingError, ImagePreprocessor
+from .provider_variants import Hunyuan3DProvider, Spar3DProvider, StableFast3DProvider
 from .service import ImageTo3DService, UnknownImageTo3DProviderError
 from .trellis_provider import TrellisProvider, TrellisProviderError
 
@@ -24,6 +25,9 @@ _service = ImageTo3DService(
     providers={
         "fixture": FixtureImageTo3DProvider(),
         "trellis": TrellisProvider(),
+        "stable-fast-3d": StableFast3DProvider(),
+        "spar3d": Spar3DProvider(),
+        "hunyuan3d": Hunyuan3DProvider(),
     },
     default_provider="fixture",
 )
