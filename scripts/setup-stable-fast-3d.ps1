@@ -128,7 +128,10 @@ if (-not $SkipRequirements) {
     Write-Step "Installing Stable Fast 3D dependencies"
     Push-Location $sf3dRepo
     try {
-        & $pythonExe -m pip install -r requirements.txt
+        # SF3D's local native extensions import torch from setup.py. Disable PEP 517
+        # build isolation so those builds use the already validated torch installation
+        # from .venv-sf3d instead of an empty temporary build environment.
+        & $pythonExe -m pip install --no-build-isolation -r requirements.txt
         if ($LASTEXITCODE -ne 0) {
             throw "Stable Fast 3D requirements installation failed. On Windows, verify Visual Studio 2022 C++ build tools and that your PyTorch/CUDA combination is compatible."
         }
