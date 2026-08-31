@@ -10,6 +10,7 @@ The first product vertical slice is:
 Image
   → Upload
   → Background Removal / Preprocessing
+  → optional StylePreprocessor
   → ImageTo3DProvider
   → Generated Mesh
   → ARTIFEX Project Model
@@ -74,9 +75,9 @@ Open the Vite URL shown in the terminal, normally:
 http://localhost:5173
 ```
 
-### What can be tested locally today
+### GPU-free smoke test
 
-Select the `fixture` provider to exercise the complete GPU-free development flow:
+Select `Style: Original` and `Provider: Fixture` to exercise the complete deterministic development flow:
 
 ```text
 Image upload
@@ -90,6 +91,42 @@ Image upload
 ```
 
 The `fixture` provider intentionally generates a deterministic cube. It validates the ARTIFEX application pipeline, geometry tooling and export workflow; it does **not** infer the uploaded image's shape.
+
+### First real Image → 3D test
+
+ARTIFEX now includes a dedicated Stable Fast 3D runner at:
+
+```text
+tools/image_to_3d/stable_fast_3d_runner.py
+```
+
+Once the upstream Stable Fast 3D runtime is installed and configured, select:
+
+```text
+Style: Original
+Provider: Stable Fast 3D
+```
+
+The uploaded image will be reconstructed into a real GLB, normalized into ARTIFEX manufacturing units, validated and displayed by the existing Three.js viewer. This path replaces the fixture cube with the actual generated mesh.
+
+See [Stable Fast 3D local runtime](docs/image-to-3d/stable-fast-3d-local.md) for the Windows/local setup, Hugging Face access, isolated Python environment and diagnostics.
+
+After Qwen Image Edit is also configured, the full path can be tested with a style such as:
+
+```text
+Style: Collectible Vinyl
+Provider: Stable Fast 3D
+```
+
+This produces:
+
+```text
+Source image
+  → Qwen stylization
+  → Stable Fast 3D reconstruction
+  → real GLB
+  → ARTIFEX validation/viewer/export
+```
 
 ### Real Image → 3D providers
 
@@ -105,29 +142,17 @@ ARTIFEX keeps inference engines behind the same `ImageTo3DProvider` boundary. Th
 
 Real inference providers execute through isolated runner commands so GPU/model dependencies do not become dependencies of the ARTIFEX API process. Each runner receives an ARTIFEX request manifest and must return normalized mesh metadata/assets in millimeters, right-handed coordinates and Z-up convention.
 
-Example TRELLIS configuration:
-
-```bash
-export ARTIFEX_TRELLIS_COMMAND="python /path/to/artifex_trellis_runner.py"
-```
-
-Windows PowerShell:
+Stable Fast 3D is the first provider with a bundled provider-specific runtime adapter. Typical PowerShell configuration after following the local setup guide is:
 
 ```powershell
-$env:ARTIFEX_TRELLIS_COMMAND = "python C:\path\to\artifex_trellis_runner.py"
+$env:ARTIFEX_STABLE_FAST_3D_COMMAND = "python tools/image_to_3d/stable_fast_3d_runner.py"
+$env:ARTIFEX_SF3D_REPO = "$PWD\external\stable-fast-3d"
+$env:ARTIFEX_SF3D_PYTHON = "$PWD\.venv-sf3d\Scripts\python.exe"
 ```
 
-For CLI-based engines, `tools/image_to_3d/generic_cli_runner.py` can adapt an existing inference command that accepts an input image and writes a GLB. The runner environment must include `trimesh` in addition to the selected model's dependencies.
+For other CLI-based engines, `tools/image_to_3d/generic_cli_runner.py` can adapt an existing inference command that accepts an input image and writes a GLB. The runner environment must include `trimesh` in addition to the selected model's dependencies.
 
-For example, after installing Stable Fast 3D in a separate environment:
-
-```bash
-export ARTIFEX_STABLE_FAST_3D_COMMAND='python tools/image_to_3d/generic_cli_runner.py --engine-command "python /opt/stable-fast-3d/run.py {input} --output-dir {engine_output}" --mesh-glob "**/mesh.glb"'
-```
-
-PowerShell uses the same runner with `$env:ARTIFEX_STABLE_FAST_3D_COMMAND = "..."`. The generic runner normalizes the largest model dimension to 100 mm by default, generates ARTIFEX geometry metrics and writes the common `result.json` contract. Use `--target-size-mm 0` when scale normalization should be disabled.
-
-The equivalent provider environment variables can be configured for SPAR3D and Hunyuan3D using either the generic CLI runner or a provider-specific runner. Selecting an unconfigured provider returns a stable provider-unavailable error rather than silently falling back to another model.
+The equivalent provider environment variables can be configured for SPAR3D and Hunyuan3D using either the generic CLI runner or a future provider-specific runner. Selecting an unconfigured provider returns a stable provider-unavailable error rather than silently falling back to another model.
 
 See [Image → 3D Provider Benchmark](docs/image-to-3d/provider-benchmark.md) for the comparison criteria, runner contract and current provider recommendation. GPU-heavy benchmark runs are intentionally separate from normal CI; the deterministic fixture remains the default for smoke testing.
 
