@@ -7,7 +7,6 @@ from pathlib import Path
 
 import pytest
 
-
 REPO_ROOT = Path(__file__).resolve().parents[3]
 RUNNER_PATH = REPO_ROOT / "tools" / "image_to_3d" / "stable_fast_3d_runner.py"
 
