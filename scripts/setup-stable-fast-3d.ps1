@@ -28,20 +28,59 @@ function Assert-Command([string]$Name, [string]$InstallHint) {
     }
 }
 
+function Import-VsDevEnvironment([string]$VsInstall) {
+    $vsDevCmd = Join-Path $VsInstall "Common7\Tools\VsDevCmd.bat"
+    if (-not (Test-Path $vsDevCmd)) {
+        throw "VsDevCmd.bat was not found under $VsInstall. Repair Visual Studio 2022 and install the Desktop development with C++ workload."
+    }
+
+    Write-Step "Loading Visual Studio C++ build environment"
+    $command = '"' + $vsDevCmd + '" -arch=x64 -host_arch=x64 >nul && set'
+    $environmentLines = & $env:ComSpec /s /c $command
+    if ($LASTEXITCODE -ne 0) {
+        throw "Visual Studio developer environment initialization failed via $vsDevCmd."
+    }
+
+    foreach ($line in $environmentLines) {
+        if ($line -match '^([^=]+)=(.*)$') {
+            [System.Environment]::SetEnvironmentVariable($matches[1], $matches[2], 'Process')
+        }
+    }
+
+    $cl = Get-Command "cl.exe" -ErrorAction SilentlyContinue
+    if (-not $cl) {
+        throw "Visual Studio 2022 is installed, but cl.exe is unavailable after loading VsDevCmd.bat. Install the Desktop development with C++ workload, including MSVC v143 x64/x86 build tools and a Windows SDK."
+    }
+
+    Write-Host "MSVC compiler: $($cl.Source)"
+    $previousErrorActionPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = "Continue"
+        $compilerProbe = & cl.exe 2>&1
+        $compilerExitCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
+    if ($compilerProbe) {
+        $compilerProbe | Select-Object -First 2 | ForEach-Object { Write-Host $_ }
+    }
+}
+
 Write-Step "Checking required tools"
 Assert-Command "git" "Install Git for Windows and reopen PowerShell."
 Assert-Command "py" "Install Python $PythonVersion from python.org with the Windows py launcher enabled."
 
 $vsWhere = Join-Path ${env:ProgramFiles(x86)} "Microsoft Visual Studio\Installer\vswhere.exe"
+$vsInstall = $null
 if (-not (Test-Path $vsWhere)) {
     Write-Warning "Visual Studio 2022 was not detected. Stable Fast 3D Windows support is experimental and native dependencies may fail to build. Install Visual Studio 2022 Build Tools with Desktop development with C++."
 } else {
-    $vsInstall = & $vsWhere -latest -products * -version "[17.0,18.0)" -property installationPath
+    $vsInstall = & $vsWhere -latest -products * -version "[17.0,18.0)" -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
     if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($vsInstall)) {
-        Write-Warning "Visual Studio 2022 installation was not detected by vswhere. Native dependency builds may fail."
-    } else {
-        Write-Host "Visual Studio 2022: $vsInstall"
+        throw "Visual Studio 2022 was found, but the MSVC x64/x86 C++ build tools workload is missing. Open Visual Studio Installer and add Desktop development with C++, MSVC v143 x64/x86 build tools, and a Windows SDK."
     }
+    Write-Host "Visual Studio 2022: $vsInstall"
+    Import-VsDevEnvironment $vsInstall
 }
 
 $nvidia = Get-Command "nvidia-smi" -ErrorAction SilentlyContinue
@@ -77,7 +116,7 @@ if (-not (Test-Path $pythonExe)) {
 }
 
 & $pythonExe -m pip install --upgrade pip
-& $pythonExe -m pip install "setuptools==69.5.1" wheel
+& $pythonExe -m pip install "setuptools==69.5.1" wheel ninja
 
 Write-Step "Checking PyTorch"
 $torchAvailable = $false
@@ -133,7 +172,7 @@ if (-not $SkipRequirements) {
         # from .venv-sf3d instead of an empty temporary build environment.
         & $pythonExe -m pip install --no-build-isolation -r requirements.txt
         if ($LASTEXITCODE -ne 0) {
-            throw "Stable Fast 3D requirements installation failed. On Windows, verify Visual Studio 2022 C++ build tools and that your PyTorch/CUDA combination is compatible."
+            throw "Stable Fast 3D requirements installation failed. On Windows, verify the MSVC C++ workload, Windows SDK, and that your PyTorch/CUDA combination is compatible."
         }
     } finally {
         Pop-Location
